@@ -24,7 +24,8 @@
       "apiBaseUrl": "https://digipin-pj-production.up.railway.app"
     },
     "plugins": [
-      "expo-image-picker"
+      "expo-image-picker",
+      "expo-asset"
     ]
   }
 }
