@@ -14,6 +14,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.golfevidence.app"
     },
+    "plugins": [
+      "expo-dev-client",
+      "expo-image-picker",
+      "expo-asset"
+    ],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#1a6b4c"
@@ -22,10 +27,6 @@
     },
     "extra": {
       "apiBaseUrl": "https://digipin-pj-production.up.railway.app"
-    },
-    "plugins": [
-      "expo-image-picker",
-      "expo-asset"
-    ]
+    }
   }
 }
