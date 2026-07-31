@@ -6,7 +6,7 @@
     "watchPatterns": ["src/**", "public/**", "index.html", "package.json"]
   },
   "deploy": {
-    "startCommand": "npx --yes serve@latest dist -l $PORT --single",
+    "startCommand": "node -e \"const fs=require('fs'); const u=process.env.API_BASE_URL||''; fs.writeFileSync('dist/config.js', 'window.__APP_CONFIG__ = { API_BASE_URL: \"'+u+'\" };');\" && npx --yes serve@latest dist -l $PORT --single",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }

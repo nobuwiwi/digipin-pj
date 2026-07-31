@@ -48,9 +48,11 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
    | 変数名 | 値 |
    |--------|-----|
-   | `VITE_API_BASE_URL` | バックエンドのURL（例: `https://golf-api-production.up.railway.app`） |
+   | `API_BASE_URL` | バックエンドのURL（例: `https://golf-api-production.up.railway.app`） |
    | `VITE_SUPABASE_URL` | Supabase プロジェクトURL |
    | `VITE_SUPABASE_ANON_KEY` | Supabase Anon Key |
+
+   ※ `API_BASE_URL` は **ランタイム変数** です。コンテナ起動時に `dist/config.js` が自動生成され、ビルドのし直しは不要です。
 
 5. デプロイ完了後、**Settings → Networking → Generate Domain** で公開URLを発行
    - 例: `https://golf-web-production.up.railway.app`
@@ -59,7 +61,7 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 ```
 ビルド: npm install && npm run build
-起動:   npx serve dist -l $PORT --single
+起動:   config.js 生成 → npx serve dist -l $PORT --single
 ```
 
 ---
@@ -91,8 +93,20 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 ## トラブルシューティング
 
+### `Unexpected token '<'` / JSONパースエラーが出る場合
+これはAPIリクエストがHTML（`index.html`）で返っている状態です。以下を確認してください:
+
+1. フロントエンドの環境変数 `API_BASE_URL` がバックエンドのURLに設定されているか
+   - 例: `https://golf-api-production.up.railway.app`（末尾のスラッシュなし）
+2. `API_BASE_URL` を変更した後、フロントエンドが再デプロイされているか
+   - Railway は Variables の変更で自動的に再デプロイします
+3. ブラウザの開発者ツール → Network タブで、APIリクエストのURLを確認
+   - リクエストURLがフロントのドメインになっている場合、`API_BASE_URL` が反映されていません
+4. ブラウザで `https://<フロントURL>/config.js` を開き、内容を確認
+   - `window.__APP_CONFIG__ = { API_BASE_URL: "https://..." };` になっていれば正常
+
 ### APIに接続できない場合
-- フロントの `VITE_API_BASE_URL` が正しいか確認（末尾のスラッシュなし）
+- `API_BASE_URL` が正しいか確認（末尾のスラッシュなし）
 - バックエンドの `ALLOWED_ORIGINS` にフロントのURLが含まれているか確認
 - バックエンドのデプロイログで起動エラーがないか確認
 
