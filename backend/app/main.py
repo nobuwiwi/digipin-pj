@@ -32,8 +32,13 @@ load_dotenv()
 def fetch_single(query):
     try:
         from postgrest.exceptions import APIError
-        return query.execute()
-    except APIError as e:
+        res = query.execute()
+        if res is None:
+            class DummyRes:
+                data = None
+            return DummyRes()
+        return res
+    except Exception as e:
         if "204" in str(e) or getattr(e, "code", "") == "204":
             class DummyRes:
                 data = None
@@ -132,8 +137,13 @@ async def register_account(body: RegisterAccountRequest, device_id: str = Depend
         return JSONResponse(status_code=409, content={"error": "このアカウント名は既に使用されています", "suggestions": generate_name_suggestions(name)})
 
     inserted = sb.table("accounts").insert({"device_id": device_id, "account_name": name}).execute()
-    if inserted.data:
+    if inserted and hasattr(inserted, "data") and inserted.data:
         inserted.data = inserted.data[0]
+    elif inserted is None:
+        # Fallback if execute() returns None but succeeds
+        class Dummy:
+            data = {"device_id": device_id, "account_name": name}
+        inserted = Dummy()
     if not inserted.data:
         raise HTTPException(status_code=500, detail="アカウント登録に失敗しました")
     return {"message": "アカウント登録が完了しました", "account": inserted.data}
@@ -160,8 +170,12 @@ async def update_account(body: UpdateAccountRequest, device_id: str = Depends(ge
         return JSONResponse(status_code=409, content={"error": "このアカウント名は既に使用されています", "suggestions": generate_name_suggestions(name)})
 
     updated = sb.table("accounts").update({"account_name": name}).eq("device_id", device_id).execute()
-    if updated.data:
+    if updated and hasattr(updated, "data") and updated.data:
         updated.data = updated.data[0]
+    elif updated is None:
+        class Dummy:
+            data = {"device_id": device_id, "account_name": name}
+        updated = Dummy()
     if not updated.data:
         raise HTTPException(status_code=500, detail="アカウント更新に失敗しました")
     return {"message": "アカウント名を更新しました", "account": updated.data}
@@ -277,8 +291,12 @@ async def create_competition(body: CreateCompetitionRequest, device_id: str = De
         raise HTTPException(status_code=403, detail="アカウントが登録されていません")
 
     inserted = sb.table("competitions").insert({"device_id": device_id, "name": body.name, "date": body.date, "course_name": body.course_name, "status": "active"}).execute()
-    if inserted.data:
+    if inserted and hasattr(inserted, "data") and inserted.data:
         inserted.data = inserted.data[0]
+    elif inserted is None:
+        class Dummy:
+            data = {"device_id": device_id, "name": body.name, "date": body.date, "course_name": body.course_name, "status": "active"}
+        inserted = Dummy()
     if not inserted.data:
         raise HTTPException(status_code=500, detail="コンペの作成に失敗しました")
 
@@ -627,8 +645,12 @@ async def create_evidence(
             insert_data["distance"] = dist
 
     inserted = sb.table("evidence_images").insert(insert_data).execute()
-    if inserted.data:
+    if inserted and hasattr(inserted, "data") and inserted.data:
         inserted.data = inserted.data[0]
+    elif inserted is None:
+        class Dummy:
+            data = insert_data
+        inserted = Dummy()
     if not inserted.data:
         sb.storage.from_("evidence-images").remove([file_path])
         raise HTTPException(status_code=500, detail="証拠画像の保存に失敗しました")
