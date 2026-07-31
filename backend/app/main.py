@@ -52,6 +52,12 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+
     return JSONResponse(
         status_code=500,
         content={
@@ -61,6 +67,7 @@ async def global_exception_handler(request: Request, exc: Exception):
                 "バックエンドの Variables タブで SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY が設定されているか確認してください。"
             ],
         },
+        headers=headers
     )
 
 
