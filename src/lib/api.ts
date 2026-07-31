@@ -15,7 +15,7 @@ import type {
   PendingRepRequest,
 } from "@/types";
 
-const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? (window as any).__APP_CONFIG__?.API_BASE_URL ?? "").replace(/\/$/, "");
+const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || (window as any).__APP_CONFIG__?.API_BASE_URL || "").replace(/\/$/, "");
 
 if (!API_BASE_URL) {
   console.warn(
