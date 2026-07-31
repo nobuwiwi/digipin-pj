@@ -4,7 +4,13 @@ const path = require("path");
 
 const DIST = path.join(__dirname, "dist");
 const PORT = process.env.PORT || 3000;
-const API_BASE_URL = process.env.API_BASE_URL || "";
+
+// Normalize API_BASE_URL: ensure it has a protocol (https:// by default).
+// This handles cases where Railway's env var is set without "https://".
+let API_BASE_URL = (process.env.API_BASE_URL || "").trim().replace(/\/$/, "");
+if (API_BASE_URL && !/^https?:\/\//.test(API_BASE_URL)) {
+  API_BASE_URL = `https://${API_BASE_URL}`;
+}
 
 const MIME = {
   ".html": "text/html",
@@ -21,18 +27,10 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
-  // Generate config.js dynamically from environment variables on every request.
-  // Checks both API_BASE_URL and VITE_API_BASE_URL for maximum compatibility.
+  // Generate config.js dynamically from the environment on every request.
   if (req.url === "/config.js" || req.url === "/public/config.js") {
-    const rawUrl = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || "";
-    const apiUrl = rawUrl.replace(/\/$/, "");
-    const body = `window.__APP_CONFIG__ = { API_BASE_URL: "${apiUrl}" };`;
-    res.writeHead(200, {
-      "Content-Type": "application/javascript",
-      "Cache-Control": "no-cache, no-store, must-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0"
-    });
+    const body = `window.__APP_CONFIG__ = { API_BASE_URL: "${API_BASE_URL}" };`;
+    res.writeHead(200, { "Content-Type": "application/javascript" });
     res.end(body);
     return;
   }
