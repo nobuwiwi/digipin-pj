@@ -93,7 +93,7 @@ export function RegisterScreen({ deviceId, onRegistered }: RegisterScreenProps) 
             <Trophy className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-forest-800 mb-2">
-            ゴルフ証拠画像管理
+            デジピン
           </h1>
           <p className="text-sm text-forest-600">
             ドラコン賞・ニアピン賞の記録を残そう

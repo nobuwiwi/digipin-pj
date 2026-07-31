@@ -373,7 +373,7 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
         </View>
       </View>
 
-      <Text style={styles.versionText}>ゴルフ証拠画像管理システム v1.0.0</Text>
+      <Text style={styles.versionText}>デジピン v1.0.0</Text>
     </ScrollView>
   );
 }

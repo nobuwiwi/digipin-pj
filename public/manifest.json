@@ -1,6 +1,6 @@
 {
-  "name": "ゴルフ証拠画像管理",
-  "short_name": "ゴルフ証拠",
+  "name": "デジピン",
+  "short_name": "デジピン",
   "description": "ゴルフコンペのドラコン・ニアピン証拠画像を管理するPWA",
   "start_url": "/",
   "display": "standalone",

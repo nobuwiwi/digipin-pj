@@ -90,7 +90,7 @@ export function RegisterScreen({ deviceId, onRegistered }: RegisterScreenProps) 
         <View style={styles.heroIcon}>
           <Trophy size={36} color={colors.white} />
         </View>
-        <Text style={styles.heroTitle}>ゴルフ証拠画像管理</Text>
+        <Text style={styles.heroTitle}>デジピン</Text>
         <Text style={styles.heroSubtitle}>ドラコン賞・ニアピン賞の記録を残そう</Text>
       </View>
 

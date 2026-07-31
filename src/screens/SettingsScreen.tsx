@@ -431,7 +431,7 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
       {/* App info */}
       <div className="text-center py-4">
         <p className="text-xs text-gray-400">
-          ゴルフ証拠画像管理システム v1.0.0
+          デジピン v1.0.0
         </p>
       </div>
     </div>
