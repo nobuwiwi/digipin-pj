@@ -622,7 +622,7 @@ async def create_evidence(
     file_name = f"{uuid.uuid4()}.{file_ext}"
     file_path = f"{device_id}/{file_name}"
 
-    upload = sb.storage.from_("evidence-images").upload(file_path, contents, {"content-type": image.content_type or "image/jpeg", "upsert": False})
+    upload = sb.storage.from_("evidence-images").upload(file_path, contents, {"content-type": image.content_type or "image/jpeg", "upsert": "false"})
     if hasattr(upload, "error") and upload.error:
         raise HTTPException(status_code=500, detail="画像のアップロードに失敗しました")
 
