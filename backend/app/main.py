@@ -131,7 +131,9 @@ async def register_account(body: RegisterAccountRequest, device_id: str = Depend
     if conflict.data:
         return JSONResponse(status_code=409, content={"error": "このアカウント名は既に使用されています", "suggestions": generate_name_suggestions(name)})
 
-    inserted = sb.table("accounts").insert({"device_id": device_id, "account_name": name}).select("device_id, account_name, created_at").single().execute()
+    inserted = sb.table("accounts").insert({"device_id": device_id, "account_name": name}).execute()
+    if inserted.data:
+        inserted.data = inserted.data[0]
     if not inserted.data:
         raise HTTPException(status_code=500, detail="アカウント登録に失敗しました")
     return {"message": "アカウント登録が完了しました", "account": inserted.data}
@@ -157,7 +159,9 @@ async def update_account(body: UpdateAccountRequest, device_id: str = Depends(ge
     if conflict.data:
         return JSONResponse(status_code=409, content={"error": "このアカウント名は既に使用されています", "suggestions": generate_name_suggestions(name)})
 
-    updated = sb.table("accounts").update({"account_name": name}).eq("device_id", device_id).select("device_id, account_name, created_at").single().execute()
+    updated = sb.table("accounts").update({"account_name": name}).eq("device_id", device_id).execute()
+    if updated.data:
+        updated.data = updated.data[0]
     if not updated.data:
         raise HTTPException(status_code=500, detail="アカウント更新に失敗しました")
     return {"message": "アカウント名を更新しました", "account": updated.data}
@@ -272,7 +276,9 @@ async def create_competition(body: CreateCompetitionRequest, device_id: str = De
     if not account.data:
         raise HTTPException(status_code=403, detail="アカウントが登録されていません")
 
-    inserted = sb.table("competitions").insert({"device_id": device_id, "name": body.name, "date": body.date, "course_name": body.course_name, "status": "active"}).select("id, device_id, name, date, course_name, status, created_at").single().execute()
+    inserted = sb.table("competitions").insert({"device_id": device_id, "name": body.name, "date": body.date, "course_name": body.course_name, "status": "active"}).execute()
+    if inserted.data:
+        inserted.data = inserted.data[0]
     if not inserted.data:
         raise HTTPException(status_code=500, detail="コンペの作成に失敗しました")
 
@@ -620,7 +626,9 @@ async def create_evidence(
         if dist >= 0:
             insert_data["distance"] = dist
 
-    inserted = sb.table("evidence_images").insert(insert_data).select("id, competition_id, device_id, award_type, hole_number, distance, image_url, memo, created_at").single().execute()
+    inserted = sb.table("evidence_images").insert(insert_data).execute()
+    if inserted.data:
+        inserted.data = inserted.data[0]
     if not inserted.data:
         sb.storage.from_("evidence-images").remove([file_path])
         raise HTTPException(status_code=500, detail="証拠画像の保存に失敗しました")
