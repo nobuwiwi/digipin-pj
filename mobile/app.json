@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "ゴルフ証拠画像管理",
+    "slug": "golf-evidence",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#1a6b4c",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.golfevidence.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a6b4c"
+      },
+      "package": "com.golfevidence.app"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:8000"
+    },
+    "plugins": [
+      "expo-image-picker"
+    ]
+  }
+}
