@@ -81,7 +81,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 @app.get("/api/v1/account/check")
 async def check_account(device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    res = sb.table("accounts").select("device_id, account_name, created_at").eq("device_id", device_id).maybeSingle().execute()
+    res = sb.table("accounts").select("device_id, account_name, created_at").eq("device_id", device_id).maybe_single().execute()
     if not res.data:
         return {"registered": False}
     return {"registered": True, "account": res.data}
@@ -96,7 +96,7 @@ async def check_account_name(body: CheckNameRequest):
         raise HTTPException(status_code=400, detail="アカウント名は30文字以内で入力してください")
 
     sb = get_supabase()
-    res = sb.table("accounts").select("account_name").eq("account_name", name).maybeSingle().execute()
+    res = sb.table("accounts").select("account_name").eq("account_name", name).maybe_single().execute()
     if res.data:
         return {"available": False, "message": "このアカウント名は既に使用されています", "suggestions": generate_name_suggestions(name)}
     return {"available": True, "message": "このアカウント名は使用可能です"}
@@ -109,11 +109,11 @@ async def register_account(body: RegisterAccountRequest, device_id: str = Depend
         raise HTTPException(status_code=400, detail="アカウント名は2〜30文字で入力してください")
 
     sb = get_supabase()
-    existing = sb.table("accounts").select("device_id").eq("device_id", device_id).maybeSingle().execute()
+    existing = sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single().execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="この端末は既に登録されています")
 
-    conflict = sb.table("accounts").select("account_name").eq("account_name", name).maybeSingle().execute()
+    conflict = sb.table("accounts").select("account_name").eq("account_name", name).maybe_single().execute()
     if conflict.data:
         return JSONResponse(status_code=409, content={"error": "このアカウント名は既に使用されています", "suggestions": generate_name_suggestions(name)})
 
@@ -126,7 +126,7 @@ async def register_account(body: RegisterAccountRequest, device_id: str = Depend
 @app.get("/api/v1/account")
 async def get_account(device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    res = sb.table("accounts").select("device_id, account_name, created_at").eq("device_id", device_id).maybeSingle().execute()
+    res = sb.table("accounts").select("device_id, account_name, created_at").eq("device_id", device_id).maybe_single().execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="アカウントが見つかりません")
     return {"account": res.data}
@@ -139,7 +139,7 @@ async def update_account(body: UpdateAccountRequest, device_id: str = Depends(ge
         raise HTTPException(status_code=400, detail="アカウント名は2〜30文字で入力してください")
 
     sb = get_supabase()
-    conflict = sb.table("accounts").select("account_name").eq("account_name", name).neq("device_id", device_id).maybeSingle().execute()
+    conflict = sb.table("accounts").select("account_name").eq("account_name", name).neq("device_id", device_id).maybe_single().execute()
     if conflict.data:
         return JSONResponse(status_code=409, content={"error": "このアカウント名は既に使用されています", "suggestions": generate_name_suggestions(name)})
 
@@ -157,7 +157,7 @@ async def update_account(body: UpdateAccountRequest, device_id: str = Depends(ge
 async def get_dashboard(device_id: str = Depends(get_device_id)):
     sb = get_supabase()
 
-    account = sb.table("accounts").select("device_id, account_name, created_at").eq("device_id", device_id).maybeSingle().execute()
+    account = sb.table("accounts").select("device_id, account_name, created_at").eq("device_id", device_id).maybe_single().execute()
     if not account.data:
         raise HTTPException(status_code=404, detail="アカウントが見つかりません")
 
@@ -254,7 +254,7 @@ async def get_competitions(device_id: str = Depends(get_device_id), status: Opti
 async def create_competition(body: CreateCompetitionRequest, device_id: str = Depends(get_device_id)):
     sb = get_supabase()
 
-    account = sb.table("accounts").select("device_id").eq("device_id", device_id).maybeSingle().execute()
+    account = sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single().execute()
     if not account.data:
         raise HTTPException(status_code=403, detail="アカウントが登録されていません")
 
@@ -273,7 +273,7 @@ async def create_competition(body: CreateCompetitionRequest, device_id: str = De
 @app.get("/api/v1/competitions/{comp_id}")
 async def get_competition_detail(comp_id: str):
     sb = get_supabase()
-    comp = sb.table("competitions").select("id, device_id, name, date, course_name, status, created_at").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("id, device_id, name, date, course_name, status, created_at").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
 
@@ -284,7 +284,7 @@ async def get_competition_detail(comp_id: str):
 @app.get("/api/v1/competitions/{comp_id}/full")
 async def get_competition_full(comp_id: str):
     sb = get_supabase()
-    comp = sb.table("competitions").select("id, device_id, name, date, course_name, status, created_at").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("id, device_id, name, date, course_name, status, created_at").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
 
@@ -295,7 +295,7 @@ async def get_competition_full(comp_id: str):
 @app.put("/api/v1/competitions/{comp_id}")
 async def update_competition(comp_id: str, body: UpdateCompetitionRequest, device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
     if comp.data["device_id"] != device_id:
@@ -328,7 +328,7 @@ async def update_competition(comp_id: str, body: UpdateCompetitionRequest, devic
 @app.delete("/api/v1/competitions/{comp_id}")
 async def delete_competition(comp_id: str, device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
     if comp.data["device_id"] != device_id:
@@ -356,7 +356,7 @@ async def delete_competition(comp_id: str, device_id: str = Depends(get_device_i
 @app.get("/api/v1/competitions/{comp_id}/qr-data")
 async def get_qr_data(comp_id: str, device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    comp = sb.table("competitions").select("id, device_id, name, date, course_name, status, created_at").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("id, device_id, name, date, course_name, status, created_at").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
     if comp.data["device_id"] != device_id:
@@ -370,14 +370,14 @@ async def get_qr_data(comp_id: str, device_id: str = Depends(get_device_id)):
 @app.get("/api/v1/competitions/{comp_id}/evidence")
 async def get_evidence_by_competition(comp_id: str, device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
 
     is_owner = comp.data["device_id"] == device_id
     is_rep = False
     if not is_owner:
-        rep = sb.table("competition_representatives").select("id").eq("competition_id", comp_id).eq("representative_id", device_id).eq("status", "approved").maybeSingle().execute()
+        rep = sb.table("competition_representatives").select("id").eq("competition_id", comp_id).eq("representative_id", device_id).eq("status", "approved").maybe_single().execute()
         is_rep = bool(rep.data)
 
     if not is_owner and not is_rep:
@@ -390,14 +390,14 @@ async def get_evidence_by_competition(comp_id: str, device_id: str = Depends(get
 @app.get("/api/v1/competitions/{comp_id}/rep-check")
 async def check_representative(comp_id: str, device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("device_id").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
 
     is_owner = comp.data["device_id"] == device_id
     is_rep = False
     if not is_owner:
-        rep = sb.table("competition_representatives").select("id").eq("competition_id", comp_id).eq("representative_id", device_id).eq("status", "approved").maybeSingle().execute()
+        rep = sb.table("competition_representatives").select("id").eq("competition_id", comp_id).eq("representative_id", device_id).eq("status", "approved").maybe_single().execute()
         is_rep = bool(rep.data)
     return {"isRepresentative": is_rep, "isOwner": is_owner}
 
@@ -418,17 +418,17 @@ async def request_representative(comp_id: str, body: RequestRepresentativeReques
     sb = get_supabase()
     rep_device_id = (body.target_device_id or "").strip() or device_id
 
-    comp = sb.table("competitions").select("id, device_id").eq("id", comp_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("id, device_id").eq("id", comp_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
     if comp.data["device_id"] == rep_device_id:
         raise HTTPException(status_code=400, detail="自分のコンペには代表者申請できません")
 
-    target = sb.table("accounts").select("device_id").eq("device_id", rep_device_id).maybeSingle().execute()
+    target = sb.table("accounts").select("device_id").eq("device_id", rep_device_id).maybe_single().execute()
     if not target.data:
         raise HTTPException(status_code=404, detail="指定されたアカウントが見つかりません")
 
-    existing = sb.table("competition_representatives").select("id, status").eq("competition_id", comp_id).eq("representative_id", rep_device_id).maybeSingle().execute()
+    existing = sb.table("competition_representatives").select("id, status").eq("competition_id", comp_id).eq("representative_id", rep_device_id).maybe_single().execute()
     if existing.data:
         st = existing.data["status"]
         if st == "approved":
@@ -449,7 +449,7 @@ async def update_representative(rep_id: str, body: UpdateRepresentativeRequest, 
     if body.status not in ("approved", "rejected", "pending"):
         raise HTTPException(status_code=400, detail="status は approved, rejected, または pending で指定してください")
 
-    rep = sb.table("competition_representatives").select("id, competition_id, representative_id, status, competitions:competition_id ( device_id )").eq("id", rep_id).maybeSingle().execute()
+    rep = sb.table("competition_representatives").select("id, competition_id, representative_id, status, competitions:competition_id ( device_id )").eq("id", rep_id).maybe_single().execute()
     if not rep.data:
         raise HTTPException(status_code=404, detail="代表者申請が見つかりません")
 
@@ -466,7 +466,7 @@ async def update_representative(rep_id: str, body: UpdateRepresentativeRequest, 
     if body.status == "approved":
         owner_id = comp.get("device_id")
         rep_dev = rep.data["representative_id"]
-        existing_friend = sb.table("friendships").select("id").or_(f"and(eq.account_id,{owner_id},eq.friend_id,{rep_dev}),and(eq.account_id,{rep_dev},eq.friend_id,{owner_id})").maybeSingle().execute()
+        existing_friend = sb.table("friendships").select("id").or_(f"and(eq.account_id,{owner_id},eq.friend_id,{rep_dev}),and(eq.account_id,{rep_dev},eq.friend_id,{owner_id})").maybe_single().execute()
         if not existing_friend.data:
             sb.table("friendships").insert([{"account_id": owner_id, "friend_id": rep_dev}, {"account_id": rep_dev, "friend_id": owner_id}]).execute()
 
@@ -547,7 +547,7 @@ async def get_evidence(device_id: str = Depends(get_device_id), competition_id: 
 @app.get("/api/v1/evidence/{evidence_id}")
 async def get_evidence_detail(evidence_id: str):
     sb = get_supabase()
-    res = sb.table("evidence_images").select("id, competition_id, device_id, award_type, hole_number, distance, image_url, memo, created_at, competitions:competition_id ( name, date, course_name ), accounts:device_id ( account_name )").eq("id", evidence_id).maybeSingle().execute()
+    res = sb.table("evidence_images").select("id, competition_id, device_id, award_type, hole_number, distance, image_url, memo, created_at, competitions:competition_id ( name, date, course_name ), accounts:device_id ( account_name )").eq("id", evidence_id).maybe_single().execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="証拠画像が見つかりません")
     return {"evidenceImage": res.data}
@@ -572,11 +572,11 @@ async def create_evidence(
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="画像ファイルサイズが大きすぎます（10MB以下にしてください）")
 
-    account = sb.table("accounts").select("device_id").eq("device_id", device_id).maybeSingle().execute()
+    account = sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single().execute()
     if not account.data:
         raise HTTPException(status_code=403, detail="アカウントが登録されていません")
 
-    comp = sb.table("competitions").select("id").eq("id", competition_id).maybeSingle().execute()
+    comp = sb.table("competitions").select("id").eq("id", competition_id).maybe_single().execute()
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
 
@@ -617,7 +617,7 @@ async def create_evidence(
 @app.delete("/api/v1/evidence/{evidence_id}")
 async def delete_evidence(evidence_id: str, device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    evidence = sb.table("evidence_images").select("id, device_id, image_url").eq("id", evidence_id).maybeSingle().execute()
+    evidence = sb.table("evidence_images").select("id, device_id, image_url").eq("id", evidence_id).maybe_single().execute()
     if not evidence.data:
         raise HTTPException(status_code=404, detail="証拠画像が見つかりません")
     if evidence.data["device_id"] != device_id:
@@ -646,7 +646,7 @@ async def delete_evidence(evidence_id: str, device_id: str = Depends(get_device_
 @app.post("/api/v1/device-transfer/issue")
 async def issue_transfer_code(device_id: str = Depends(get_device_id)):
     sb = get_supabase()
-    account = sb.table("accounts").select("device_id").eq("device_id", device_id).maybeSingle().execute()
+    account = sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single().execute()
     if not account.data:
         raise HTTPException(status_code=403, detail="アカウントが登録されていません")
 
@@ -665,7 +665,7 @@ async def execute_transfer(body: ExecuteTransferRequest, device_id: str = Depend
     if not code or not code.isdigit() or len(code) != 6:
         raise HTTPException(status_code=400, detail="6桁のコードを入力してください")
 
-    record = sb.table("device_transfer_codes").select("id, old_device_id, status, expires_at").eq("code", code).eq("status", "pending").maybeSingle().execute()
+    record = sb.table("device_transfer_codes").select("id, old_device_id, status, expires_at").eq("code", code).eq("status", "pending").maybe_single().execute()
     if not record.data:
         raise HTTPException(status_code=404, detail="引き継ぎコードが見つかりません。コードを確認してください")
 
@@ -677,7 +677,7 @@ async def execute_transfer(body: ExecuteTransferRequest, device_id: str = Depend
     if old_device_id == device_id:
         raise HTTPException(status_code=400, detail="同じ端末では引き継ぎできません")
 
-    existing = sb.table("accounts").select("device_id").eq("device_id", device_id).maybeSingle().execute()
+    existing = sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single().execute()
     if existing.data:
         raise HTTPException(status_code=409, detail="この端末には既にアカウントが登録されています")
 
