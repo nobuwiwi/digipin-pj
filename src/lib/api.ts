@@ -15,11 +15,25 @@ import type {
   PendingRepRequest,
 } from "@/types";
 
-const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? (window as any).__APP_CONFIG__?.API_BASE_URL ?? "").replace(/\/$/, "");
+export function getApiBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  const configUrl = typeof window !== "undefined" ? (window as any).__APP_CONFIG__?.API_BASE_URL : undefined;
+
+  const url =
+    typeof envUrl === "string" && envUrl.trim() !== ""
+      ? envUrl.trim()
+      : typeof configUrl === "string" && configUrl.trim() !== ""
+      ? configUrl.trim()
+      : "";
+
+  return url.replace(/\/$/, "");
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 if (!API_BASE_URL) {
   console.warn(
-    "VITE_API_BASE_URL が未設定です。バックエンドのAPI URLを環境変数 VITE_API_BASE_URL に設定してください。",
+    "API_BASE_URL が未設定です。Railway の環境変数 API_BASE_URL または VITE_API_BASE_URL にバックエンドの URL を設定してください。",
   );
 }
 
@@ -43,29 +57,56 @@ function buildHeaders(deviceId: string, extra?: Record<string, string>): Headers
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") || "";
+
   if (!res.ok) {
     let message = `APIエラー (${res.status})`;
     let suggestions: string[] | undefined;
-    try {
-      const body = await res.json();
-      if (body.detail) message = typeof body.detail === "string" ? body.detail : message;
-      if (body.error) message = body.error;
-      if (body.suggestions) suggestions = body.suggestions;
-    } catch {
-      // ignore JSON parse error
+    if (contentType.includes("application/json")) {
+      try {
+        const body = await res.json();
+        if (body.detail) message = typeof body.detail === "string" ? body.detail : message;
+        if (body.error) message = body.error;
+        if (body.suggestions) suggestions = body.suggestions;
+      } catch {
+        // ignore JSON parse error
+      }
+    } else if (contentType.includes("text/html")) {
+      message = `API接続エラー (${res.status}): HTMLレスポンスが返却されました。Railway等の環境変数 API_BASE_URL にバックエンドのURLが正しく設定されているか確認してください。`;
     }
     throw new ApiError(message, res.status, suggestions);
   }
-  return (await res.json()) as T;
+
+  if (contentType.includes("text/html")) {
+    throw new ApiError(
+      `API接続エラー (${res.status}): 予想外のHTMLレスポンスを受信しました。Railwayの環境変数 API_BASE_URL にバックエンドのURL（例: https://xxx.up.railway.app）が設定されているか確認してください。`,
+      res.status,
+    );
+  }
+
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new ApiError(
+      `APIレスポンス解析エラー (${res.status}): JSON以外のデータが返却されました。API_BASE_URL の設定を確認してください。`,
+      res.status,
+    );
+  }
 }
 
 async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
+  let finalUrl = url;
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    const baseUrl = getApiBaseUrl();
+    finalUrl = baseUrl ? `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}` : url;
+  }
+
   try {
-    const res = await fetch(url, options);
+    const res = await fetch(finalUrl, options);
     return res;
   } catch {
     throw new ApiError(
-      "サーバーに接続できませんでした。ネットワーク環境を確認してください。",
+      "サーバーに接続できませんでした。ネットワーク環境および API_BASE_URL の設定を確認してください。",
       0,
     );
   }

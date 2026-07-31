@@ -21,10 +21,18 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
-  // Generate config.js dynamically from the environment on every request.
+  // Generate config.js dynamically from environment variables on every request.
+  // Checks both API_BASE_URL and VITE_API_BASE_URL for maximum compatibility.
   if (req.url === "/config.js" || req.url === "/public/config.js") {
-    const body = `window.__APP_CONFIG__ = { API_BASE_URL: "${API_BASE_URL}" };`;
-    res.writeHead(200, { "Content-Type": "application/javascript" });
+    const rawUrl = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || "";
+    const apiUrl = rawUrl.replace(/\/$/, "");
+    const body = `window.__APP_CONFIG__ = { API_BASE_URL: "${apiUrl}" };`;
+    res.writeHead(200, {
+      "Content-Type": "application/javascript",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0"
+    });
     res.end(body);
     return;
   }
