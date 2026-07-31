@@ -32,7 +32,13 @@ load_dotenv()
 app = FastAPI(title="Golf Evidence API", version="1.0.0")
 
 raw_origins = os.environ.get("ALLOWED_ORIGINS", "*")
-origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+origins = [o.strip().rstrip("/") for o in raw_origins.split(",") if o.strip()]
+
+# RailwayのフロントエンドURLをデフォルトで許可リストに追加
+default_frontend = "https://frontend-production-0a2c7.up.railway.app"
+if default_frontend not in origins and "*" not in origins:
+    origins.append(default_frontend)
+
 allow_credentials = False if "*" in origins else True
 
 app.add_middleware(
