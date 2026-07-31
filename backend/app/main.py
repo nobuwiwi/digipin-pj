@@ -31,13 +31,32 @@ load_dotenv()
 
 app = FastAPI(title="Golf Evidence API", version="1.0.0")
 
+raw_origins = os.environ.get("ALLOWED_ORIGINS", "*")
+origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+allow_credentials = False if "*" in origins else True
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.environ.get("ALLOWED_ORIGINS", "*").split(","),
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-Client-Info", "X-Device-Id"],
+    allow_origins=origins if origins else ["*"],
+    allow_credentials=allow_credentials,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": f"サーバーエラー: {str(exc)}",
+            "error": str(exc),
+            "suggestions": [
+                "バックエンドの Variables タブで SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY が設定されているか確認してください。"
+            ],
+        },
+    )
+
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 

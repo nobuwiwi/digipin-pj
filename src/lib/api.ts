@@ -43,20 +43,43 @@ function buildHeaders(deviceId: string, extra?: Record<string, string>): Headers
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") || "";
+
   if (!res.ok) {
     let message = `APIエラー (${res.status})`;
     let suggestions: string[] | undefined;
-    try {
-      const body = await res.json();
-      if (body.detail) message = typeof body.detail === "string" ? body.detail : message;
-      if (body.error) message = body.error;
-      if (body.suggestions) suggestions = body.suggestions;
-    } catch {
-      // ignore JSON parse error
+    if (contentType.includes("application/json")) {
+      try {
+        const body = await res.json();
+        if (body.detail) message = typeof body.detail === "string" ? body.detail : message;
+        if (body.error) message = body.error;
+        if (body.suggestions) suggestions = body.suggestions;
+      } catch {
+        // ignore JSON parse error
+      }
+    } else {
+      const rawText = await res.text().catch(() => "");
+      message = `APIエラー (${res.status}): ${rawText || res.statusText || "サーバーエラーが発生しました。"}`;
     }
     throw new ApiError(message, res.status, suggestions);
   }
-  return (await res.json()) as T;
+
+  if (contentType.includes("text/html")) {
+    throw new ApiError(
+      `API接続エラー (${res.status}): 予想外のHTMLレスポンスを受信しました。バックエンドのURL（${API_BASE_URL}）が正しいか確認してください。`,
+      res.status,
+    );
+  }
+
+  try {
+    return (await res.json()) as T;
+  } catch {
+    const rawText = await res.text().catch(() => "");
+    throw new ApiError(
+      `APIレスポンス解析エラー (${res.status}): ${rawText || "JSON以外のデータが返却されました。"}`,
+      res.status,
+    );
+  }
 }
 
 async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
