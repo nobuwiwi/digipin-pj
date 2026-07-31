@@ -21,7 +21,7 @@
       "package": "com.golfevidence.app"
     },
     "extra": {
-      "apiBaseUrl": "http://localhost:8000"
+      "apiBaseUrl": "https://digipin-pj-production.up.railway.app"
     },
     "plugins": [
       "expo-image-picker"
