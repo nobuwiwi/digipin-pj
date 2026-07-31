@@ -29,6 +29,30 @@ from .models import (
 
 load_dotenv()
 
+# --- Workaround for postgrest-py 204 error on maybe_single() ---
+try:
+    try:
+        from postgrest._sync.request_builder import SyncSelectRequestBuilder
+    except ImportError:
+        from postgrest.sync_request_builder import SyncSelectRequestBuilder
+    from postgrest.exceptions import APIError
+    
+    _orig_execute = SyncSelectRequestBuilder.execute
+    def _patched_execute(self, *args, **kwargs):
+        try:
+            return _orig_execute(self, *args, **kwargs)
+        except APIError as e:
+            if "204" in str(e) or getattr(e, "code", "") == "204":
+                class DummyResponse:
+                    def __init__(self):
+                        self.data = None
+                return DummyResponse()
+            raise e
+    SyncSelectRequestBuilder.execute = _patched_execute
+except Exception:
+    pass
+# -------------------------------------------------------------
+
 app = FastAPI(title="Golf Evidence API", version="1.0.0")
 
 raw_origins = os.environ.get("ALLOWED_ORIGINS", "*")
