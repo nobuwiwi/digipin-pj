@@ -90,9 +90,11 @@ async function safeFetch(url: string, options?: RequestInit): Promise<Response> 
   try {
     const res = await fetch(url, options);
     return res;
-  } catch {
+  } catch (error) {
+    console.error(`Fetch failed for URL: ${url}`, error);
+    const details = error instanceof Error ? error.message : String(error);
     throw new ApiError(
-      "サーバーに接続できませんでした。ネットワーク環境を確認してください。",
+      `サーバーに接続できませんでした。ネットワーク環境または CORS 設定を確認してください。(詳細: ${details})`,
       0,
     );
   }
