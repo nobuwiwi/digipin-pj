@@ -258,6 +258,6 @@ function buildDeepLink(competitionId: string, holeNumber: number, awardType: str
   if (repNames.length > 0) {
     params.set("reps", repNames.join(","));
   }
-  const base = import.meta.env.VITE_PUBLIC_URL ?? "https://golf-award-evidence-k3vp.bolt.host";
+  const base = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
   return `${base}?${params.toString()}`;
 }

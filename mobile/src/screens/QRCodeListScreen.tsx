@@ -13,7 +13,7 @@ const AWARD_LABEL: Record<HoleAwardType, { label: string; icon: typeof Trophy; c
   nearpin: { label: 'ニアピン', icon: Target, color: colors.sand[600], bg: colors.sand[50] },
 };
 
-const WEB_URL = 'https://golf-award-evidence-k3vp.bolt.host';
+const WEB_URL = 'https://frontend-production-0a2c7.up.railway.app';
 
 function buildDeepLink(competitionId: string, holeNumber: number, awardType: string, repNames: string[]): string {
   const params = new URLSearchParams({
