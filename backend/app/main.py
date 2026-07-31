@@ -326,7 +326,7 @@ async def get_competition_full(comp_id: str):
     if not comp.data:
         raise HTTPException(status_code=404, detail="コンペが見つかりません")
 
-    holes = sb.table("competition_holes").select("id, competition_id, hole_number, award_type").eq("competition_id", comp_id).order("hole_number", ascending=True).execute()
+    holes = sb.table("competition_holes").select("id, competition_id, hole_number, award_type").eq("competition_id", comp_id).order("hole_number", desc=False).execute()
     return {"competition": comp.data, "holes": holes.data or []}
 
 
@@ -400,7 +400,7 @@ async def get_qr_data(comp_id: str, device_id: str = Depends(get_device_id)):
     if comp.data["device_id"] != device_id:
         raise HTTPException(status_code=403, detail="このコンペのQRコードを発行する権限がありません")
 
-    holes = sb.table("competition_holes").select("id, competition_id, hole_number, award_type").eq("competition_id", comp_id).order("hole_number", ascending=True).execute()
+    holes = sb.table("competition_holes").select("id, competition_id, hole_number, award_type").eq("competition_id", comp_id).order("hole_number", desc=False).execute()
     reps = sb.table("competition_representatives").select("id, competition_id, representative_id, status, created_at, updated_at, accounts:representative_id ( account_name )").eq("competition_id", comp_id).eq("status", "approved").order("created_at", desc=True).execute()
     return {"competition": comp.data, "holes": holes.data or [], "representatives": reps.data or []}
 
