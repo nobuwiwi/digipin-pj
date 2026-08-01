@@ -205,7 +205,7 @@ async def get_dashboard(device_id: str = Depends(get_device_id)):
         rep_comps = sb.table("competitions").select("id, name, date, course_name, status").in_("id", rep_ids).eq("status", "active").order("created_at", desc=True).limit(5).execute()
         rep_active = rep_comps.data or []
 
-    owned = [{"**role**": "owner", **c} for c in (owned_active.data or [])]
+    owned = [{"role": "owner", **c} for c in (owned_active.data or [])]
     reps = [{"role": "representative", **c} for c in rep_active]
     seen = set()
     active_comps = []
