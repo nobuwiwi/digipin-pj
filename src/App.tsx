@@ -107,8 +107,8 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-forest-50 via-white to-forest-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-forest-600 rounded-2xl shadow-lg mb-4 animate-pulse">
-            <Trophy className="w-8 h-8 text-white" />
+          <div className="flex items-center justify-center mb-6 animate-pulse">
+            <img src="/logo.png" alt="デジピン" className="w-64 max-w-[80vw] h-auto object-contain drop-shadow-md" />
           </div>
           <div className="flex items-center justify-center gap-2 text-forest-600">
             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -124,8 +124,8 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-forest-50 via-white to-forest-100 flex items-center justify-center p-4">
         <div className="text-center max-w-sm">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-forest-600 rounded-2xl shadow-lg mb-4">
-            <Trophy className="w-8 h-8 text-white" />
+          <div className="flex items-center justify-center mb-6 opacity-75 grayscale">
+            <img src="/logo.png" alt="デジピン" className="w-48 max-w-[60vw] h-auto object-contain drop-shadow-md" />
           </div>
           <h1 className="text-lg font-bold text-forest-800 mb-2">接続エラー</h1>
           <p className="text-sm text-gray-500 mb-6">{bootError}</p>

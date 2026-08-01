@@ -12,7 +12,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.golfevidence.app"
+      "bundleIdentifier": "com.golfevidence.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "plugins": [
       "expo-dev-client",
@@ -23,10 +26,16 @@
       "adaptiveIcon": {
         "backgroundColor": "#1a6b4c"
       },
-      "package": "com.golfevidence.app"
+      "package": "com.golfevidence.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "extra": {
-      "apiBaseUrl": "https://digipin-pj-production.up.railway.app"
+      "apiBaseUrl": "https://digipin-pj-production.up.railway.app",
+      "eas": {
+        "projectId": "cf253ea1-5fba-4006-ad97-30e80b857d1c"
+      }
     }
   }
 }
