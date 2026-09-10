@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, FlatList, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft, Trophy, Target, Minus, Calendar, Check } from 'lucide-react-native';
 import { createCompetition, updateCompetition, getCompetitionFull, ApiError } from '@/lib/api';
 import type { HoleAwardType } from '@/types';
@@ -35,6 +36,21 @@ export function CompetitionCreateScreen({ deviceId, competitionId, onBack, onSav
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(isEdit);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (event.type === 'set' || Platform.OS === 'ios') {
+      if (selectedDate) {
+        const yyyy = selectedDate.getFullYear();
+        const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(selectedDate.getDate()).padStart(2, '0');
+        setDate(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!competitionId) return;
@@ -162,12 +178,32 @@ export function CompetitionCreateScreen({ deviceId, competitionId, onBack, onSav
             maxLength={50}
           />
           <Text style={styles.fieldLabel}>開催日</Text>
-          <Input
-            value={date}
-            onChangeText={setDate}
-            placeholder="例: 2024-01-15"
-            maxLength={10}
-          />
+          <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
+            <View pointerEvents="none">
+              <Input
+                value={date}
+                onChangeText={setDate}
+                placeholder="例: 2024-01-15"
+                editable={false}
+              />
+            </View>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <View>
+              <DateTimePicker
+                value={date ? new Date(date) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onDateChange}
+                locale="ja-JP"
+              />
+              {Platform.OS === 'ios' && (
+                <Button variant="secondary" onPress={() => setShowDatePicker(false)}>
+                  完了
+                </Button>
+              )}
+            </View>
+          )}
         </View>
 
         {/* 18 Hole Settings */}

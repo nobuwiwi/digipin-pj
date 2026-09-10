@@ -4,9 +4,11 @@
     "slug": "golf-evidence",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
+      "image": "./assets/splash.png",
       "backgroundColor": "#1a6b4c",
       "resizeMode": "contain"
     },
@@ -14,21 +16,32 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.golfevidence.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "証拠画像撮影およびQRコードスキャンのためにカメラを使用します。",
+        "NSPhotoLibraryUsageDescription": "証拠画像選択のために写真ライブラリを使用します。"
       }
     },
     "plugins": [
       "expo-dev-client",
       "expo-image-picker",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "証拠画像撮影およびQRコードスキャンのためにカメラを使用します。"
+        }
+      ]
     ],
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a6b4c"
       },
       "package": "com.golfevidence.app",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "extra": {
@@ -36,6 +49,12 @@
       "eas": {
         "projectId": "cf253ea1-5fba-4006-ad97-30e80b857d1c"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/cf253ea1-5fba-4006-ad97-30e80b857d1c"
     }
   }
 }

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { getApiBaseUrl } from './deviceId';
 import type {
   Account,
@@ -57,8 +58,8 @@ async function handleResponse<T>(res: Response): Promise<T> {
 async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
   try {
     return await fetch(url, options);
-  } catch {
-    throw new ApiError('サーバーに接続できませんでした。ネットワーク環境を確認してください。', 0);
+  } catch (err: any) {
+    throw new ApiError(`ネットワークエラー: ${err?.message || String(err)}`, 0);
   }
 }
 
@@ -292,12 +293,17 @@ export async function createEvidence(
   if (data.distance !== undefined) formData.append('distance', String(data.distance));
   if (data.memo) formData.append('memo', data.memo);
 
-  const imageFile: any = {
-    uri: data.imageUri,
-    type: data.imageType || 'image/jpeg',
-    name: data.imageFileName || 'photo.jpg',
-  };
-  formData.append('image', imageFile as any);
+  // Extract filename and determine type
+  const uriParts = data.imageUri.split('.');
+  const fileType = uriParts[uriParts.length - 1];
+  const mimeType = fileType === 'jpg' ? 'jpeg' : fileType;
+  const fileName = data.imageFileName || data.imageUri.split('/').pop() || 'photo.jpg';
+
+  // Create a Blob from the local file URI
+  const fileContent = await fetch(data.imageUri);
+  const blob = await fileContent.blob();
+
+  formData.append('image', blob, fileName);
 
   const res = await safeFetch(`${BASE_URL}/api/v1/evidence`, {
     method: 'POST',

@@ -36,7 +36,7 @@ eas init
 ## 5. 開発用ビルドを作成
 
 ```bash
-eas build --profile development --platform ios
+eas build --profile production --platform ios --auto-submit
 ```
 
 ビルドが完了すると、TestFlight経由でインストールするためのリンクがメールで届きます。

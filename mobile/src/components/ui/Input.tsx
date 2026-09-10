@@ -10,6 +10,7 @@ interface InputProps {
   secureTextEntry?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  editable?: boolean;
 }
 
 export function Input({
@@ -20,10 +21,11 @@ export function Input({
   secureTextEntry,
   autoCapitalize,
   keyboardType,
+  editable,
 }: InputProps) {
   return (
     <TextInput
-      style={styles.input}
+      style={[styles.input, editable === false && styles.inputDisabled]}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
@@ -32,6 +34,7 @@ export function Input({
       secureTextEntry={secureTextEntry}
       autoCapitalize={autoCapitalize}
       keyboardType={keyboardType}
+      editable={editable}
     />
   );
 }
@@ -46,5 +49,9 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     color: colors.gray[800],
     backgroundColor: colors.white,
+  },
+  inputDisabled: {
+    backgroundColor: colors.gray[100],
+    color: colors.gray[500],
   },
 });

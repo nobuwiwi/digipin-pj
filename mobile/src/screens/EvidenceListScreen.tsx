@@ -140,9 +140,9 @@ export function EvidenceListScreen({ deviceId, onUpload }: EvidenceListScreenPro
           <Text style={styles.headerTitle}>証拠画像</Text>
         </View>
         {onUpload && (
-          <Button variant="primary" size="sm" onPress={handleOpenUpload}>
-            <Camera size={16} color={colors.white} />
-            画像登録
+          <Button variant="primary" size="md" onPress={handleOpenUpload}>
+            <Camera size={18} color={colors.white} />
+            {' '}画像登録
           </Button>
         )}
       </View>
@@ -225,9 +225,7 @@ export function EvidenceListScreen({ deviceId, onUpload }: EvidenceListScreenPro
             <FlatList
               data={filteredImages}
               keyExtractor={(item) => item.id}
-              numColumns={2}
               contentContainerStyle={styles.grid}
-              columnWrapperStyle={styles.gridRow}
               renderItem={({ item: img }: { item: EvidenceImageWithRelations }) => (
                 <TouchableOpacity style={styles.imageCard} onPress={() => setPreviewImage(img)} activeOpacity={0.8}>
                   <View style={styles.imageContainer}>
@@ -396,7 +394,9 @@ const styles = StyleSheet.create({
     color: colors.forest[800],
   },
   tabsScroll: {
-    maxHeight: 50,
+    flexGrow: 0,
+    flexShrink: 0,
+    marginBottom: spacing.sm,
   },
   tabsContent: {
     paddingHorizontal: spacing.md,
@@ -483,6 +483,7 @@ const styles = StyleSheet.create({
   },
   imageCard: {
     flex: 1,
+    marginBottom: spacing.sm + 2,
     backgroundColor: colors.white,
     borderRadius: radius.lg,
     overflow: 'hidden',

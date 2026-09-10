@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View as RNView, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View as RNView, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { RefreshCw, Trophy } from 'lucide-react-native';
 import { getDeviceId } from '@/lib/deviceId';
 import { checkAccount, getPendingRequests, ApiError } from '@/lib/api';
+import { syncOfflineEvidenceQueue } from '@/lib/syncService';
 import { RegisterScreen } from '@/screens/RegisterScreen';
 import { DashboardScreen } from '@/screens/DashboardScreen';
 import { CompetitionsScreen } from '@/screens/CompetitionsScreen';
@@ -15,14 +16,15 @@ import { RepresentativeManageScreen } from '@/screens/RepresentativeManageScreen
 import { CompetitionDetailScreen } from '@/screens/CompetitionDetailScreen';
 import { QRCodeListScreen } from '@/screens/QRCodeListScreen';
 import { EvidenceRegisterScreen } from '@/screens/EvidenceRegisterScreen';
+import { OfflineEvidenceScreen } from '@/screens/OfflineEvidenceScreen';
 import { BottomNav, type TabKey } from '@/components/BottomNav';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { colors, spacing, typography, radius } from '@/theme';
 import type { View } from '@/types/navigation';
 
-type AppState = 'loading' | 'error' | 'unregistered' | 'registered';
+type AppState = 'loading' | 'error' | 'unregistered' | 'registered' | 'offline';
 
-export default function App() {
+function Main() {
   const [deviceId, setDeviceId] = useState<string>('');
   const [appState, setAppState] = useState<AppState>('loading');
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
@@ -48,6 +50,26 @@ export default function App() {
     }
   }, [deviceId]);
 
+  const triggerOfflineSync = useCallback(async (id: string) => {
+    try {
+      const result = await syncOfflineEvidenceQueue(id);
+      if (result.syncedCount > 0) {
+        Alert.alert(
+          'オフライン同期完了',
+          `オフライン時に保存された ${result.syncedCount} 件の証拠画像をサーバーへ同期完了しました。`,
+        );
+      }
+      if (result.failedCount > 0) {
+        Alert.alert(
+          '一部同期失敗',
+          `${result.failedCount} 件のオフラインデータ同期に失敗しました。\n` + result.errors.join('\n'),
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const checkRegistration = useCallback(async () => {
     if (!deviceId) return;
     setAppState('loading');
@@ -59,12 +81,19 @@ export default function App() {
       } else {
         setAppState('unregistered');
       }
+      // On online startup -> sync offline queue
+      triggerOfflineSync(deviceId);
     } catch (err) {
       const apiErr = err as ApiError;
-      setBootError(apiErr.message);
-      setAppState('error');
+      // Network failure / status 0 -> route to offline mode
+      if (apiErr.status === 0 || apiErr.message.includes('ネットワークエラー')) {
+        setAppState('offline');
+      } else {
+        setBootError(apiErr.message);
+        setAppState('error');
+      }
     }
-  }, [deviceId]);
+  }, [deviceId, triggerOfflineSync]);
 
   useEffect(() => {
     if (deviceId) checkRegistration();
@@ -89,6 +118,14 @@ export default function App() {
             <Text style={styles.loadingText}>読み込み中...</Text>
           </RNView>
         </RNView>
+      </SafeAreaView>
+    );
+  }
+
+  if (appState === 'offline') {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <OfflineEvidenceScreen onRetryOnline={checkRegistration} />
       </SafeAreaView>
     );
   }
@@ -259,6 +296,14 @@ export default function App() {
       </RNView>
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} dashboardBadge={pendingCount} />
     </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Main />
+    </SafeAreaProvider>
   );
 }
 
