@@ -437,13 +437,14 @@ export function EvidenceRegisterScreen({
         )}
       </div>
 
-      {/* Hidden file inputs */}
+      {/* Hidden file inputs: use sr-only instead of hidden to prevent Android Chrome from blocking the camera intent on display:none elements */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         onChange={handleFileSelect}
-        className="hidden"
+        className="sr-only"
+        tabIndex={-1}
       />
       <input
         ref={cameraInputRef}
@@ -451,7 +452,8 @@ export function EvidenceRegisterScreen({
         accept="image/*"
         capture="environment"
         onChange={handleFileSelect}
-        className="hidden"
+        className="sr-only"
+        tabIndex={-1}
       />
     </div>
   );
