@@ -53,8 +53,6 @@ export function EvidenceRegisterScreen({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -86,11 +84,13 @@ export function EvidenceRegisterScreen({
 
     if (!file.type.startsWith("image/")) {
       setUploadError("画像ファイルを選択してください");
+      e.target.value = "";
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
       setUploadError("画像サイズは10MB以下にしてください");
+      e.target.value = "";
       return;
     }
 
@@ -102,14 +102,7 @@ export function EvidenceRegisterScreen({
       setStep("confirm");
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleGallerySelect = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleCameraCapture = () => {
-    cameraInputRef.current?.click();
+    e.target.value = "";
   };
 
   const handleUpload = async () => {
@@ -138,8 +131,6 @@ export function EvidenceRegisterScreen({
     setImagePreview(null);
     setUploadError("");
     setStep("select");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
 
   const formatDate = (dateStr: string) => {
@@ -313,10 +304,7 @@ export function EvidenceRegisterScreen({
                 画像の登録方法を選択
               </h3>
               <div className="space-y-3">
-                <button type="button"
-                  onClick={handleGallerySelect}
-                  className="w-full flex items-center gap-3 p-4 bg-forest-50 rounded-xl hover:bg-forest-100 transition-colors active:scale-95"
-                >
+                <label className="w-full flex items-center gap-3 p-4 bg-forest-50 rounded-xl hover:bg-forest-100 transition-colors active:scale-95 cursor-pointer">
                   <div className="p-3 bg-white rounded-xl shadow-sm">
                     <ImageIcon className="w-6 h-6 text-forest-600" />
                   </div>
@@ -324,11 +312,14 @@ export function EvidenceRegisterScreen({
                     <p className="text-sm font-bold text-forest-800">ギャラリーから選択</p>
                     <p className="text-xs text-gray-500">保存済みの画像から選択</p>
                   </div>
-                </button>
-                <button type="button"
-                  onClick={handleCameraCapture}
-                  className="w-full flex items-center gap-3 p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition-colors active:scale-95"
-                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="sr-only"
+                  />
+                </label>
+                <label className="w-full flex items-center gap-3 p-4 bg-sand-50 rounded-xl hover:bg-sand-100 transition-colors active:scale-95 cursor-pointer">
                   <div className="p-3 bg-white rounded-xl shadow-sm">
                     <Camera className="w-6 h-6 text-sand-600" />
                   </div>
@@ -336,7 +327,14 @@ export function EvidenceRegisterScreen({
                     <p className="text-sm font-bold text-forest-800">新しく撮影</p>
                     <p className="text-xs text-gray-500">カメラを起動して撮影</p>
                   </div>
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileSelect}
+                    className="sr-only"
+                  />
+                </label>
               </div>
             </div>
           </div>
@@ -436,25 +434,6 @@ export function EvidenceRegisterScreen({
           </div>
         )}
       </div>
-
-      {/* Hidden file inputs: use sr-only instead of hidden to prevent Android Chrome from blocking the camera intent on display:none elements */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="sr-only"
-        tabIndex={-1}
-      />
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileSelect}
-        className="sr-only"
-        tabIndex={-1}
-      />
     </div>
   );
 }
