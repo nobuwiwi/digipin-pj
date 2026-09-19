@@ -264,9 +264,8 @@ export function EvidenceRegisterScreen({
             <span className="px-3 py-1.5 bg-gray-50 text-gray-700 text-sm font-bold rounded-lg">
               {holeNumber}番ホール
             </span>
-            <span className={`px-3 py-1.5 text-sm font-bold rounded-lg ${
-              awardType === "drancon" ? "bg-forest-50 text-forest-700" : "bg-sand-50 text-sand-700"
-            }`}>
+            <span className={`px-3 py-1.5 text-sm font-bold rounded-lg ${awardType === "drancon" ? "bg-forest-50 text-forest-700" : "bg-sand-50 text-sand-700"
+              }`}>
               {awardLabel}賞
             </span>
           </div>
@@ -282,11 +281,10 @@ export function EvidenceRegisterScreen({
                 {repNames.map((name, i) => (
                   <span
                     key={i}
-                    className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                      name === "自分" || i === 0
+                    className={`px-2.5 py-1 text-xs font-medium rounded-full ${name === "自分" || i === 0
                         ? "bg-forest-50 text-forest-700"
                         : "bg-gray-50 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {name}
                   </span>
@@ -330,7 +328,7 @@ export function EvidenceRegisterScreen({
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
+                    capture={true}
                     onChange={handleFileSelect}
                     className="sr-only"
                   />
