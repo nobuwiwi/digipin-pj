@@ -328,7 +328,7 @@ export function EvidenceRegisterScreen({
                   <input
                     type="file"
                     accept="image/*"
-                    capture={true}
+                    capture="environment"
                     onChange={handleFileSelect}
                     className="sr-only"
                   />
