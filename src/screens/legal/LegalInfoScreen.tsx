@@ -1,15 +1,20 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const LegalInfoScreen: React.FC = () => {
-  const navigate = useNavigate();
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm px-4 py-3 flex items-center">
         <button
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
           aria-label="戻る"
         >
