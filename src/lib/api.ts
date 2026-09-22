@@ -405,25 +405,30 @@ export async function getQRCodeData(
 // Device Transfer APIs
 // ============================================
 
-export async function issueTransferCode(
+export async function linkEmail(
   deviceId: string,
-): Promise<{ code: string; expiresAt: string }> {
-  const res = await safeFetch(`${API_BASE_URL}/api/v1/device-transfer/issue`, {
+  jwtToken: string,
+): Promise<{ message: string; email: string }> {
+  const res = await safeFetch(`${API_BASE_URL}/api/v1/account/link-email`, {
     method: "POST",
-    headers: buildHeaders(deviceId, { "Content-Type": "application/json" }),
+    headers: buildHeaders(deviceId, {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwtToken}`,
+    }),
   });
-  const data = await handleResponse<{ code: string; expiresAt: string }>(res);
-  return { code: data.code, expiresAt: data.expiresAt };
+  return handleResponse(res);
 }
 
-export async function executeTransfer(
+export async function executeEmailTransfer(
   deviceId: string,
-  code: string,
+  jwtToken: string,
 ): Promise<{ message: string }> {
-  const res = await safeFetch(`${API_BASE_URL}/api/v1/device-transfer/execute`, {
+  const res = await safeFetch(`${API_BASE_URL}/api/v1/device-transfer/email-execute`, {
     method: "POST",
-    headers: buildHeaders(deviceId, { "Content-Type": "application/json" }),
-    body: JSON.stringify({ code }),
+    headers: buildHeaders(deviceId, {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwtToken}`,
+    }),
   });
   return handleResponse<{ message: string }>(res);
 }

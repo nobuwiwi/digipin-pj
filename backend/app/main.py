@@ -14,7 +14,7 @@ import random
 from datetime import datetime, timedelta
 
 from .db import get_supabase
-from .deps import get_device_id, generate_name_suggestions
+from .deps import get_device_id, generate_name_suggestions, get_supabase_user_email
 from .models import (
     CheckNameRequest,
     RegisterAccountRequest,
@@ -684,56 +684,58 @@ async def delete_evidence(evidence_id: str, device_id: str = Depends(get_device_
 
 
 # ============================================
-# Device Transfer
+# Device Transfer (Email Linkage)
 # ============================================
 
-@app.post("/api/v1/device-transfer/issue")
-async def issue_transfer_code(device_id: str = Depends(get_device_id)):
+@app.post("/api/v1/account/link-email")
+async def link_email(
+    device_id: str = Depends(get_device_id),
+    email: str = Depends(get_supabase_user_email)
+):
     sb = get_supabase()
     account = fetch_single(sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single())
     if not account.data:
         raise HTTPException(status_code=403, detail="アカウントが登録されていません")
 
-    sb.table("device_transfer_codes").update({"status": "expired"}).eq("old_device_id", device_id).eq("status", "pending").execute()
+    try:
+        sb.table("accounts").update({"email": email}).eq("device_id", device_id).execute()
+    except Exception as e:
+        if "unique" in str(e).lower() or "duplicate" in str(e).lower():
+            raise HTTPException(status_code=409, detail="このメールアドレスは既に別のアカウントと連携されています")
+        raise e
 
-    code = str(random.randint(100000, 999999))
-    expires_at = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
-    sb.table("device_transfer_codes").insert({"old_device_id": device_id, "code": code, "status": "pending", "expires_at": expires_at}).execute()
-    return {"code": code, "expiresAt": expires_at}
+    return {"message": "メールアドレスを連携しました", "email": email}
 
 
-@app.post("/api/v1/device-transfer/execute")
-async def execute_transfer(body: ExecuteTransferRequest, device_id: str = Depends(get_device_id)):
+@app.post("/api/v1/device-transfer/email-execute")
+async def execute_email_transfer(
+    device_id: str = Depends(get_device_id),
+    email: str = Depends(get_supabase_user_email)
+):
     sb = get_supabase()
-    code = body.code.strip()
-    if not code or not code.isdigit() or len(code) != 6:
-        raise HTTPException(status_code=400, detail="6桁のコードを入力してください")
-
-    record = fetch_single(sb.table("device_transfer_codes").select("id, old_device_id, status, expires_at").eq("code", code).eq("status", "pending").maybe_single())
+    
+    # 連携済みアカウントを検索
+    record = fetch_single(sb.table("accounts").select("device_id, account_name").eq("email", email).maybe_single())
     if not record.data:
-        raise HTTPException(status_code=404, detail="引き継ぎコードが見つかりません。コードを確認してください")
-
-    if datetime.fromisoformat(record.data["expires_at"].replace("Z", "+00:00")) < datetime.utcnow().astimezone():
-        sb.table("device_transfer_codes").update({"status": "expired"}).eq("id", record.data["id"]).execute()
-        raise HTTPException(status_code=410, detail="引き継ぎコードの有効期限が切れています。再度発行してください")
-
-    old_device_id = record.data["old_device_id"]
+        raise HTTPException(status_code=404, detail="このメールアドレスに紐づくアカウントが見つかりません")
+        
+    old_device_id = record.data["device_id"]
     if old_device_id == device_id:
         raise HTTPException(status_code=400, detail="同じ端末では引き継ぎできません")
-
+        
     existing = fetch_single(sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single())
     if existing.data:
         raise HTTPException(status_code=409, detail="この端末には既にアカウントが登録されています")
-
+        
+    # 引き継ぎ処理（既存のID置換）
     sb.table("accounts").update({"device_id": device_id}).eq("device_id", old_device_id).execute()
     sb.table("competitions").update({"device_id": device_id}).eq("device_id", old_device_id).execute()
     sb.table("evidence_images").update({"device_id": device_id}).eq("device_id", old_device_id).execute()
     sb.table("competition_representatives").update({"representative_id": device_id}).eq("representative_id", old_device_id).execute()
     sb.table("friendships").update({"account_id": device_id}).eq("account_id", old_device_id).execute()
     sb.table("friendships").update({"friend_id": device_id}).eq("friend_id", old_device_id).execute()
-
-    sb.table("device_transfer_codes").update({"status": "used", "new_device_id": device_id, "used_at": datetime.utcnow().isoformat()}).eq("id", record.data["id"]).execute()
-    return {"message": "端末の引き継ぎが完了しました"}
+    
+    return {"message": "アカウントの引き継ぎが完了しました"}
 
 
 # ============================================

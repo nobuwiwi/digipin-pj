@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, StyleSheet } from 'react-native';
+import { StyleProp, TextStyle, TextInput, StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '@/theme';
 
 interface InputProps {
@@ -11,6 +11,7 @@ interface InputProps {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   editable?: boolean;
+  style?: StyleProp<TextStyle>;
 }
 
 export function Input({
@@ -22,10 +23,11 @@ export function Input({
   autoCapitalize,
   keyboardType,
   editable,
+  style,
 }: InputProps) {
   return (
     <TextInput
-      style={[styles.input, editable === false && styles.inputDisabled]}
+      style={[styles.input, editable === false && styles.inputDisabled, style]}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}

@@ -44,3 +44,11 @@ class UpdateRepresentativeRequest(BaseModel):
 
 class ExecuteTransferRequest(BaseModel):
     code: str
+
+
+class LinkEmailRequest(BaseModel):
+    pass  # JWT token contains the email
+
+
+class ExecuteEmailTransferRequest(BaseModel):
+    pass  # JWT token contains the email

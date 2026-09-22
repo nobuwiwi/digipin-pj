@@ -12,7 +12,8 @@ import {
   ChevronRight,
   HelpCircle,
 } from 'lucide-react-native';
-import { getAccount, updateAccount, checkAccountName, issueTransferCode, executeTransfer, ApiError } from '@/lib/api';
+import { getAccount, updateAccount, checkAccountName, linkEmail, executeEmailTransfer, ApiError } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { getWebBaseUrl } from '@/lib/deviceId';
 import type { Account } from '@/types';
 import { Button } from '@/components/ui/Button';
@@ -37,8 +38,9 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferError, setTransferError] = useState('');
   const [transferSuccess, setTransferSuccess] = useState('');
-  const [issuedCode, setIssuedCode] = useState('');
-  const [transferCodeInput, setTransferCodeInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [otpInput, setOtpInput] = useState('');
+  const [otpSentFor, setOtpSentFor] = useState<'link' | 'transfer' | null>(null);
 
   const fetchAccount = useCallback(async () => {
     setLoading(true);
@@ -322,101 +324,175 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
         </View>
       </View>
 
-      {/* Device Transfer card */}
+      {/* Email Linkage & Transfer card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Smartphone size={16} color={colors.forest[700]} />
-          <Text style={styles.cardHeaderText}>端末引き継ぎ</Text>
+          <Text style={styles.cardHeaderText}>メールアドレス連携・引き継ぎ</Text>
         </View>
         <View style={styles.cardBody}>
           <Text style={styles.transferDescription}>
-            新しい端末にアカウントとデータを引き継げます。旧端末で6桁のコードを発行し、新端末で入力してください。コードの有効期限は10分です。
+            メールアドレスを連携すると、別の端末へアカウントを引き継ぐことができます。
           </Text>
 
-          <View style={styles.transferSection}>
-            <Text style={styles.transferSectionTitle}>旧端末：コード発行</Text>
-            <Button
-              variant="primary"
-              onPress={async () => {
-                setTransferLoading(true);
-                setTransferError('');
-                setIssuedCode('');
-                try {
-                  const res = await issueTransferCode(deviceId);
-                  setIssuedCode(res.code);
-                } catch (err) {
-                  const apiErr = err as ApiError;
-                  setTransferError(apiErr.message);
-                } finally {
-                  setTransferLoading(false);
-                }
-              }}
-              loading={transferLoading}
-              disabled={transferLoading}
-            >
-              引き継ぎコードを発行
-            </Button>
-            {issuedCode ? (
-              <View style={styles.issuedCodeBox}>
-                <Text style={styles.issuedCodeLabel}>引き継ぎコード（10分有効）</Text>
-                <Text style={styles.issuedCodeText}>{issuedCode}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <View style={styles.transferSection}>
-            <Text style={styles.transferSectionTitle}>新端末：コード入力</Text>
-            <View style={styles.transferInputRow}>
-              <View style={styles.flex1}>
+          {!otpSentFor ? (
+            <View style={{ gap: spacing.md }}>
+              <View style={{ gap: spacing.xs }}>
+                <Text style={styles.label}>メールアドレス</Text>
                 <Input
-                  value={transferCodeInput}
+                  value={emailInput}
                   onChangeText={(text) => {
-                    setTransferCodeInput(text.replace(/\D/g, '').slice(0, 6));
+                    setEmailInput(text);
                     setTransferError('');
                   }}
-                  placeholder="6桁のコード"
-                  maxLength={6}
-                  keyboardType="numeric"
+                  placeholder="example@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                 />
               </View>
-              <Button
-                variant="primary"
-                onPress={async () => {
-                  if (transferCodeInput.length !== 6) {
-                    setTransferError('6桁のコードを入力してください');
-                    return;
-                  }
-                  setTransferLoading(true);
-                  setTransferError('');
-                  try {
-                    await executeTransfer(deviceId, transferCodeInput);
-                    setTransferSuccess('端末の引き継ぎが完了しました。');
-                  } catch (err) {
-                    const apiErr = err as ApiError;
-                    setTransferError(apiErr.message);
-                  } finally {
-                    setTransferLoading(false);
-                  }
-                }}
-                loading={transferLoading}
-                disabled={transferLoading || transferCodeInput.length !== 6}
-              >
-                引き継ぎ
-              </Button>
+
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <Button
+                  variant="outline"
+                  style={styles.flex1}
+                  onPress={async () => {
+                    if (!emailInput) {
+                      setTransferError('メールアドレスを入力してください');
+                      return;
+                    }
+                    setTransferLoading(true);
+                    setTransferError('');
+                    try {
+                      const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
+                      if (error) throw error;
+                      setOtpSentFor('link');
+                      setTransferSuccess('認証コードを送信しました。メールをご確認ください。');
+                    } catch (err: any) {
+                      setTransferError(err.message || 'メールの送信に失敗しました');
+                    } finally {
+                      setTransferLoading(false);
+                    }
+                  }}
+                  loading={transferLoading && !otpSentFor}
+                  disabled={transferLoading || !emailInput}
+                >
+                  連携する (旧端末)
+                </Button>
+                <Button
+                  variant="primary"
+                  style={styles.flex1}
+                  onPress={async () => {
+                    if (!emailInput) {
+                      setTransferError('メールアドレスを入力してください');
+                      return;
+                    }
+                    setTransferLoading(true);
+                    setTransferError('');
+                    try {
+                      const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
+                      if (error) throw error;
+                      setOtpSentFor('transfer');
+                      setTransferSuccess('認証コードを送信しました。メールをご確認ください。');
+                    } catch (err: any) {
+                      setTransferError(err.message || 'メールの送信に失敗しました');
+                    } finally {
+                      setTransferLoading(false);
+                    }
+                  }}
+                  loading={transferLoading && !otpSentFor}
+                  disabled={transferLoading || !emailInput}
+                >
+                  引き継ぐ (新端末)
+                </Button>
+              </View>
             </View>
-            {transferError ? (
-              <View style={[styles.messageBox, { backgroundColor: colors.red[50] }]}>
-                <AlertCircle size={16} color={colors.red[600]} />
-                <Text style={[styles.messageText, { color: colors.red[600] }]}>{transferError}</Text>
+          ) : (
+            <View style={{ gap: spacing.md }}>
+              <View style={{ gap: spacing.xs }}>
+                <Text style={styles.label}>認証コード (6桁)</Text>
+                <Input
+                  value={otpInput}
+                  onChangeText={(text) => {
+                    setOtpInput(text.replace(/\D/g, '').slice(0, 6));
+                    setTransferError('');
+                  }}
+                  placeholder="123456"
+                  maxLength={6}
+                  keyboardType="numeric"
+                  style={{ textAlign: 'center', fontSize: typography.lg, letterSpacing: 8, fontFamily: 'monospace' }}
+                />
               </View>
-            ) : null}
-            {transferSuccess ? (
-              <View style={[styles.messageBox, { backgroundColor: colors.forest[50] }]}>
-                <CheckCircle size={16} color={colors.forest[700]} />
-                <Text style={[styles.messageText, { color: colors.forest[700] }]}>{transferSuccess}</Text>
+
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <Button
+                  variant="outline"
+                  onPress={() => {
+                    setOtpSentFor(null);
+                    setOtpInput('');
+                    setTransferSuccess('');
+                    setTransferError('');
+                  }}
+                  disabled={transferLoading}
+                >
+                  戻る
+                </Button>
+                <Button
+                  variant="primary"
+                  style={styles.flex1}
+                  onPress={async () => {
+                    if (otpInput.length !== 6) {
+                      setTransferError('6桁のコードを入力してください');
+                      return;
+                    }
+                    setTransferLoading(true);
+                    setTransferError('');
+                    setTransferSuccess('');
+                    try {
+                      const { data, error } = await supabase.auth.verifyOtp({
+                        email: emailInput,
+                        token: otpInput,
+                        type: 'email',
+                      });
+                      if (error) throw error;
+                      if (!data.session) throw new Error('セッションの取得に失敗しました');
+
+                      const token = data.session.access_token;
+                      if (otpSentFor === 'link') {
+                        await linkEmail(deviceId, token);
+                        setTransferSuccess('メールアドレスの連携が完了しました。');
+                        setOtpSentFor(null);
+                        setOtpInput('');
+                      } else {
+                        await executeEmailTransfer(deviceId, token);
+                        setTransferSuccess('引き継ぎが完了しました。');
+                      }
+                    } catch (err: any) {
+                      setTransferError(err.message || '認証または処理に失敗しました');
+                    } finally {
+                      setTransferLoading(false);
+                    }
+                  }}
+                  loading={transferLoading}
+                  disabled={transferLoading || otpInput.length !== 6}
+                >
+                  {otpSentFor === 'link' ? '連携を完了する' : '引き継ぎを実行する'}
+                </Button>
               </View>
-            ) : null}
-          </View>
+            </View>
+          )}
+
+          {transferError ? (
+            <View style={[styles.messageBox, { backgroundColor: colors.red[50], marginTop: spacing.sm }]}>
+              <AlertCircle size={16} color={colors.red[600]} />
+              <Text style={[styles.messageText, { color: colors.red[600] }]}>{transferError}</Text>
+            </View>
+          ) : null}
+          {transferSuccess ? (
+            <View style={[styles.messageBox, { backgroundColor: colors.forest[50], marginTop: spacing.sm }]}>
+              <CheckCircle size={16} color={colors.forest[700]} />
+              <Text style={[styles.messageText, { color: colors.forest[700] }]}>{transferSuccess}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 

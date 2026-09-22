@@ -9,7 +9,8 @@ import {
   Edit3,
   Save,
 } from "lucide-react";
-import { getAccount, updateAccount, checkAccountName, issueTransferCode, executeTransfer, ApiError } from "@/lib/api";
+import { getAccount, updateAccount, checkAccountName, linkEmail, executeEmailTransfer, ApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import type { Account } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -32,12 +33,13 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // Device transfer state
+  // Email transfer state
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferError, setTransferError] = useState("");
   const [transferSuccess, setTransferSuccess] = useState("");
-  const [issuedCode, setIssuedCode] = useState("");
-  const [transferCodeInput, setTransferCodeInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [otpSentFor, setOtpSentFor] = useState<"link" | "transfer" | null>(null);
 
   const fetchAccount = useCallback(async () => {
     setLoading(true);
@@ -320,111 +322,168 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
         </div>
       </div>
 
-      {/* Device Transfer card */}
+      {/* Email Linkage & Transfer card */}
       <div className="bg-white rounded-2xl shadow-sm border border-forest-50 overflow-hidden">
         <div className="bg-forest-50 px-5 py-3 border-b border-forest-100">
           <h2 className="text-sm font-bold text-forest-700 flex items-center gap-2">
             <Smartphone className="w-4 h-4" />
-            端末引き継ぎ
+            メールアドレス連携・引き継ぎ
           </h2>
         </div>
         <div className="p-5 space-y-4">
           <p className="text-sm text-gray-600 leading-relaxed">
-            新しい端末にアカウントとデータを引き継げます。旧端末で6桁のコードを発行し、新端末で入力してください。コードの有効期限は10分です。
+            メールアドレスを連携すると、別の端末へアカウントを引き継ぐことができます。
           </p>
 
-          {/* Issue code section */}
-          <div className="border-t border-forest-50 pt-4">
-            <h3 className="text-sm font-bold text-forest-700 mb-2">旧端末：コード発行</h3>
-            <Button
-              variant="primary"
-              onClick={async () => {
-                setTransferLoading(true);
-                setTransferError("");
-                setIssuedCode("");
-                try {
-                  const res = await issueTransferCode(deviceId);
-                  setIssuedCode(res.code);
-                } catch (err) {
-                  const apiErr = err as ApiError;
-                  setTransferError(apiErr.message);
-                } finally {
-                  setTransferLoading(false);
-                }
-              }}
-              loading={transferLoading}
-              disabled={transferLoading}
-              className="w-full"
-            >
-              引き継ぎコードを発行
-            </Button>
-            {issuedCode && (
-              <div className="mt-3 bg-forest-50 rounded-xl p-4 text-center border border-forest-100">
-                <p className="text-xs text-forest-600 mb-1">引き継ぎコード（10分有効）</p>
-                <p className="text-3xl font-bold tracking-[0.3em] text-forest-800 font-mono">
-                  {issuedCode}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Execute transfer section */}
-          <div className="border-t border-forest-50 pt-4">
-            <h3 className="text-sm font-bold text-forest-700 mb-2">新端末：コード入力</h3>
-            <div className="flex gap-2">
-              <div className="flex-1">
+          {!otpSentFor ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs text-forest-700 font-bold">メールアドレス</label>
                 <Input
-                  type="text"
-                  value={transferCodeInput}
+                  type="email"
+                  value={emailInput}
                   onChange={(e) => {
-                    setTransferCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6));
+                    setEmailInput(e.target.value);
                     setTransferError("");
                   }}
-                  placeholder="6桁のコード"
-                  maxLength={6}
-                  className="text-center text-lg tracking-[0.3em] font-mono"
+                  placeholder="example@example.com"
                 />
               </div>
-              <Button
-                variant="primary"
-                onClick={async () => {
-                  if (transferCodeInput.length !== 6) {
-                    setTransferError("6桁のコードを入力してください");
-                    return;
-                  }
-                  setTransferLoading(true);
-                  setTransferError("");
-                  try {
-                    await executeTransfer(deviceId, transferCodeInput);
-                    setTransferSuccess("端末の引き継ぎが完了しました。アカウント情報を再読み込みします...");
-                    setTimeout(() => window.location.reload(), 2000);
-                  } catch (err) {
-                    const apiErr = err as ApiError;
-                    setTransferError(apiErr.message);
-                  } finally {
-                    setTransferLoading(false);
-                  }
-                }}
-                loading={transferLoading}
-                disabled={transferLoading || transferCodeInput.length !== 6}
-                className="shrink-0"
-              >
-                引き継ぎ
-              </Button>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (!emailInput) return setTransferError("メールアドレスを入力してください");
+                    setTransferLoading(true);
+                    setTransferError("");
+                    try {
+                      const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
+                      if (error) throw error;
+                      setOtpSentFor("link");
+                      setTransferSuccess("認証コードを送信しました。メールをご確認ください。");
+                    } catch (err: any) {
+                      setTransferError(err.message || "メールの送信に失敗しました");
+                    } finally {
+                      setTransferLoading(false);
+                    }
+                  }}
+                  loading={transferLoading && !otpSentFor}
+                  disabled={transferLoading || !emailInput}
+                  className="flex-1"
+                >
+                  連携する (旧端末)
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (!emailInput) return setTransferError("メールアドレスを入力してください");
+                    setTransferLoading(true);
+                    setTransferError("");
+                    try {
+                      const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
+                      if (error) throw error;
+                      setOtpSentFor("transfer");
+                      setTransferSuccess("認証コードを送信しました。メールをご確認ください。");
+                    } catch (err: any) {
+                      setTransferError(err.message || "メールの送信に失敗しました");
+                    } finally {
+                      setTransferLoading(false);
+                    }
+                  }}
+                  loading={transferLoading && !otpSentFor}
+                  disabled={transferLoading || !emailInput}
+                  className="flex-1"
+                >
+                  引き継ぐ (新端末)
+                </Button>
+              </div>
             </div>
-            {transferError && (
-              <div className="mt-2 flex items-start gap-2 p-2.5 rounded-xl text-sm bg-red-50 text-red-600">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{transferError}</span>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs text-forest-700 font-bold">認証コード (6桁)</label>
+                <Input
+                  type="text"
+                  value={otpInput}
+                  onChange={(e) => {
+                    setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6));
+                    setTransferError("");
+                  }}
+                  placeholder="123456"
+                  maxLength={6}
+                  className="text-center tracking-[0.3em] font-mono"
+                />
               </div>
-            )}
-            {transferSuccess && (
-              <div className="mt-2 flex items-start gap-2 p-2.5 rounded-xl text-sm bg-forest-50 text-forest-700">
-                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{transferSuccess}</span>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setOtpSentFor(null);
+                    setOtpInput("");
+                    setTransferSuccess("");
+                    setTransferError("");
+                  }}
+                  disabled={transferLoading}
+                >
+                  戻る
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={async () => {
+                    if (otpInput.length !== 6) return setTransferError("6桁のコードを入力してください");
+                    setTransferLoading(true);
+                    setTransferError("");
+                    setTransferSuccess("");
+                    try {
+                      const { data, error } = await supabase.auth.verifyOtp({
+                        email: emailInput,
+                        token: otpInput,
+                        type: "email",
+                      });
+                      if (error) throw error;
+                      if (!data.session) throw new Error("セッションの取得に失敗しました");
+
+                      const token = data.session.access_token;
+                      if (otpSentFor === "link") {
+                        await linkEmail(deviceId, token);
+                        setTransferSuccess("メールアドレスの連携が完了しました。");
+                        setOtpSentFor(null);
+                        setOtpInput("");
+                      } else {
+                        await executeEmailTransfer(deviceId, token);
+                        setTransferSuccess("引き継ぎが完了しました。再読み込みします...");
+                        setTimeout(() => window.location.reload(), 2000);
+                      }
+                    } catch (err: any) {
+                      setTransferError(err.message || "認証または処理に失敗しました");
+                    } finally {
+                      setTransferLoading(false);
+                    }
+                  }}
+                  loading={transferLoading}
+                  disabled={transferLoading || otpInput.length !== 6}
+                >
+                  {otpSentFor === "link" ? "連携を完了する" : "引き継ぎを実行する"}
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {transferError && (
+            <div className="mt-2 flex items-start gap-2 p-2.5 rounded-xl text-sm bg-red-50 text-red-600">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{transferError}</span>
+            </div>
+          )}
+          {transferSuccess && (
+            <div className="mt-2 flex items-start gap-2 p-2.5 rounded-xl text-sm bg-forest-50 text-forest-700">
+              <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{transferSuccess}</span>
+            </div>
+          )}
         </div>
       </div>
 

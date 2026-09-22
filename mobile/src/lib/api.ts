@@ -332,21 +332,32 @@ export async function getQRCodeData(deviceId: string, competitionId: string): Pr
 
 // Device Transfer APIs
 
-export async function issueTransferCode(deviceId: string): Promise<{ code: string; expiresAt: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/device-transfer/issue`, {
-    method: 'POST',
-    headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
+export async function linkEmail(
+  deviceId: string,
+  jwtToken: string,
+): Promise<{ message: string; email: string }> {
+  const res = await safeFetch(`${BASE_URL}/api/v1/account/link-email`, {
+    method: "POST",
+    headers: buildHeaders(deviceId, {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwtToken}`,
+    }),
   });
   return handleResponse(res);
 }
 
-export async function executeTransfer(deviceId: string, code: string): Promise<{ message: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/device-transfer/execute`, {
-    method: 'POST',
-    headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ code }),
+export async function executeEmailTransfer(
+  deviceId: string,
+  jwtToken: string,
+): Promise<{ message: string }> {
+  const res = await safeFetch(`${BASE_URL}/api/v1/device-transfer/email-execute`, {
+    method: "POST",
+    headers: buildHeaders(deviceId, {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwtToken}`,
+    }),
   });
-  return handleResponse(res);
+  return handleResponse<{ message: string }>(res);
 }
 
 // Evidence by Competition (all users)

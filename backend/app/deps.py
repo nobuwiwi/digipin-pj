@@ -17,3 +17,21 @@ def generate_name_suggestions(base: str) -> list[str]:
         if len(candidate) <= 30:
             suggestions.append(candidate)
     return suggestions[:3]
+
+
+def get_supabase_user_email(authorization: str | None = Header(default=None)) -> str:
+    from .db import get_supabase
+    
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="有効な認証トークンが提供されていません")
+    
+    token = authorization.split(" ")[1]
+    sb = get_supabase()
+    
+    try:
+        user_response = sb.auth.get_user(token)
+        if not user_response.user or not user_response.user.email:
+            raise HTTPException(status_code=401, detail="メールアドレスの取得に失敗しました")
+        return user_response.user.email
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"トークンの検証に失敗しました: {str(e)}")
