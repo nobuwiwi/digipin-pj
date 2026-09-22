@@ -184,6 +184,15 @@ export function RegisterScreen({ deviceId, onRegistered }: RegisterScreenProps) 
           )}
 
           {/* Register button */}
+          <div className="mb-4 text-center">
+            <p className="text-xs text-gray-500">
+              登録ボタンを押すことで、
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-forest-600 hover:underline">利用規約</a>
+              および
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-forest-600 hover:underline">プライバシーポリシー</a>
+              に同意したものとみなします。
+            </p>
+          </div>
           <Button
             variant="primary"
             size="lg"

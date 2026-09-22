@@ -7,6 +7,10 @@ export function getApiBaseUrl(): string {
   return Constants.expoConfig?.extra?.apiBaseUrl ?? 'http://localhost:8000';
 }
 
+export function getWebBaseUrl(): string {
+  return Constants.expoConfig?.extra?.webBaseUrl ?? 'https://golf-web-production.up.railway.app';
+}
+
 export async function getDeviceId(): Promise<string> {
   let id = await AsyncStorage.getItem(DEVICE_ID_KEY);
   if (!id) {

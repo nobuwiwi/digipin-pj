@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'react-native';
 import {
   Settings as SettingsIcon,
   User,
@@ -9,8 +9,11 @@ import {
   RefreshCw,
   Edit3,
   Save,
+  ChevronRight,
+  HelpCircle,
 } from 'lucide-react-native';
 import { getAccount, updateAccount, checkAccountName, issueTransferCode, executeTransfer, ApiError } from '@/lib/api';
+import { getWebBaseUrl } from '@/lib/deviceId';
 import type { Account } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -258,6 +261,50 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
         </View>
       </View>
 
+      {/* Legal & Support card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <HelpCircle size={16} color={colors.forest[700]} />
+          <Text style={styles.cardHeaderText}>法的情報・サポート</Text>
+        </View>
+        <View style={styles.listBody}>
+          <TouchableOpacity 
+            style={styles.listItem} 
+            onPress={() => Linking.openURL(`${getWebBaseUrl()}/terms`)}
+          >
+            <Text style={styles.listItemText}>利用規約</Text>
+            <ChevronRight size={16} color={colors.gray[400]} />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          
+          <TouchableOpacity 
+            style={styles.listItem} 
+            onPress={() => Linking.openURL(`${getWebBaseUrl()}/privacy`)}
+          >
+            <Text style={styles.listItemText}>プライバシーポリシー</Text>
+            <ChevronRight size={16} color={colors.gray[400]} />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+
+          <TouchableOpacity 
+            style={styles.listItem} 
+            onPress={() => Linking.openURL(`${getWebBaseUrl()}/contact`)}
+          >
+            <Text style={styles.listItemText}>お問い合わせ</Text>
+            <ChevronRight size={16} color={colors.gray[400]} />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+
+          <TouchableOpacity 
+            style={styles.listItem} 
+            onPress={() => Linking.openURL(`${getWebBaseUrl()}/legal`)}
+          >
+            <Text style={styles.listItemText}>特定商取引法に基づく表記</Text>
+            <ChevronRight size={16} color={colors.gray[400]} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Device ID card */}
       <View style={styles.card}>
         <View style={[styles.cardHeader, { backgroundColor: colors.gray[50] }]}>
@@ -429,6 +476,24 @@ const styles = StyleSheet.create({
   cardBody: {
     padding: spacing.md,
     gap: spacing.md,
+  },
+  listBody: {
+    padding: 0,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+  },
+  listItemText: {
+    fontSize: typography.sm,
+    color: colors.forest[800],
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.forest[50],
+    marginHorizontal: spacing.md,
   },
   label: {
     fontSize: typography.xs,

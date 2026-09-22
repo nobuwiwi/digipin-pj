@@ -428,6 +428,33 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
         </div>
       </div>
 
+      {/* Legal & Support */}
+      <div className="bg-white rounded-2xl shadow-sm border border-forest-50 overflow-hidden">
+        <div className="bg-forest-50 px-5 py-3 border-b border-forest-100">
+          <h2 className="text-sm font-bold text-forest-700 flex items-center gap-2">
+            法的情報・サポート
+          </h2>
+        </div>
+        <div className="flex flex-col">
+          <a href="/terms" className="px-5 py-4 border-b border-forest-50 text-sm text-forest-800 hover:bg-forest-50 transition-colors flex justify-between items-center">
+            <span>利用規約</span>
+            <span className="text-gray-400">›</span>
+          </a>
+          <a href="/privacy" className="px-5 py-4 border-b border-forest-50 text-sm text-forest-800 hover:bg-forest-50 transition-colors flex justify-between items-center">
+            <span>プライバシーポリシー</span>
+            <span className="text-gray-400">›</span>
+          </a>
+          <a href="/contact" className="px-5 py-4 border-b border-forest-50 text-sm text-forest-800 hover:bg-forest-50 transition-colors flex justify-between items-center">
+            <span>お問い合わせ</span>
+            <span className="text-gray-400">›</span>
+          </a>
+          <a href="/legal" className="px-5 py-4 text-sm text-forest-800 hover:bg-forest-50 transition-colors flex justify-between items-center">
+            <span>特定商取引法に基づく表記</span>
+            <span className="text-gray-400">›</span>
+          </a>
+        </div>
+      </div>
+
       {/* App info */}
       <div className="text-center py-4">
         <p className="text-xs text-gray-400">

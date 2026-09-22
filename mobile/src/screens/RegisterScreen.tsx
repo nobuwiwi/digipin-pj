@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'react-native';
 import { User, CheckCircle, AlertCircle, Trophy } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { checkAccountName, registerAccount, ApiError } from '@/lib/api';
+import { getWebBaseUrl } from '@/lib/deviceId';
 import { colors, spacing, radius, typography } from '@/theme';
 
 interface RegisterScreenProps {
@@ -156,6 +157,16 @@ export function RegisterScreen({ deviceId, onRegistered }: RegisterScreenProps) 
           </View>
         ) : null}
 
+        <View style={styles.agreementBox}>
+          <Text style={styles.agreementText}>
+            登録ボタンを押すことで、
+            <Text style={styles.agreementLink} onPress={() => Linking.openURL(`${getWebBaseUrl()}/terms`)}>利用規約</Text>
+            および
+            <Text style={styles.agreementLink} onPress={() => Linking.openURL(`${getWebBaseUrl()}/privacy`)}>プライバシーポリシー</Text>
+            に同意したものとみなします。
+          </Text>
+        </View>
+
         <Button
           variant="primary"
           size="lg"
@@ -283,5 +294,19 @@ const styles = StyleSheet.create({
     fontSize: typography.xs,
     color: colors.gray[400],
     marginTop: spacing.lg,
+  },
+  agreementBox: {
+    marginBottom: spacing.md,
+    alignItems: 'center',
+  },
+  agreementText: {
+    fontSize: typography.xs,
+    color: colors.gray[500],
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  agreementLink: {
+    color: colors.forest[600],
+    textDecorationLine: 'underline',
   },
 });
