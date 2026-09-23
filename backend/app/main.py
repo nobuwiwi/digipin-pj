@@ -24,6 +24,7 @@ from .models import (
     RequestRepresentativeRequest,
     UpdateRepresentativeRequest,
     ExecuteTransferRequest,
+    LinkExecuteRequest,
     HoleInput,
 )
 
@@ -687,55 +688,70 @@ async def delete_evidence(evidence_id: str, device_id: str = Depends(get_device_
 # Device Transfer (Email Linkage)
 # ============================================
 
-@app.post("/api/v1/account/link-email")
-async def link_email(
-    device_id: str = Depends(get_device_id),
-    email: str = Depends(get_supabase_user_email)
-):
-    sb = get_supabase()
-    account = fetch_single(sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single())
-    if not account.data:
-        raise HTTPException(status_code=403, detail="アカウントが登録されていません")
-
-    try:
-        sb.table("accounts").update({"email": email}).eq("device_id", device_id).execute()
-    except Exception as e:
-        if "unique" in str(e).lower() or "duplicate" in str(e).lower():
-            raise HTTPException(status_code=409, detail="このメールアドレスは既に別のアカウントと連携されています")
-        raise e
-
-    return {"message": "メールアドレスを連携しました", "email": email}
-
-
-@app.post("/api/v1/device-transfer/email-execute")
-async def execute_email_transfer(
+@app.get("/api/v1/account/link-check")
+async def check_email_link(
     device_id: str = Depends(get_device_id),
     email: str = Depends(get_supabase_user_email)
 ):
     sb = get_supabase()
     
-    # 連携済みアカウントを検索
-    record = fetch_single(sb.table("accounts").select("device_id, account_name").eq("email", email).maybe_single())
-    if not record.data:
-        raise HTTPException(status_code=404, detail="このメールアドレスに紐づくアカウントが見つかりません")
+    current_acc = fetch_single(sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single()).data
+    linked_acc = fetch_single(sb.table("accounts").select("device_id").eq("email", email).maybe_single()).data
+
+    def get_stats(acc_device_id):
+        if not acc_device_id: return None
+        ev_res = sb.table("evidence_images").select("id", count="exact").eq("device_id", acc_device_id).execute()
+        ev_count = ev_res.count if ev_res.count is not None else 0
+        comp_res = sb.table("competitions").select("id", count="exact").eq("device_id", acc_device_id).execute()
+        comp_count = comp_res.count if comp_res.count is not None else 0
         
-    old_device_id = record.data["device_id"]
-    if old_device_id == device_id:
-        raise HTTPException(status_code=400, detail="同じ端末では引き継ぎできません")
+        acc_data = fetch_single(sb.table("accounts").select("updated_at").eq("device_id", acc_device_id).maybe_single()).data
+        updated_at = acc_data.get("updated_at") if acc_data else None
         
-    existing = fetch_single(sb.table("accounts").select("device_id").eq("device_id", device_id).maybe_single())
-    if existing.data:
-        raise HTTPException(status_code=409, detail="この端末には既にアカウントが登録されています")
-        
-    # 引き継ぎ処理（既存のID置換）
-    sb.table("accounts").update({"device_id": device_id}).eq("device_id", old_device_id).execute()
-    sb.table("competitions").update({"device_id": device_id}).eq("device_id", old_device_id).execute()
-    sb.table("evidence_images").update({"device_id": device_id}).eq("device_id", old_device_id).execute()
-    sb.table("competition_representatives").update({"representative_id": device_id}).eq("representative_id", old_device_id).execute()
-    sb.table("friendships").update({"account_id": device_id}).eq("account_id", old_device_id).execute()
-    sb.table("friendships").update({"friend_id": device_id}).eq("friend_id", old_device_id).execute()
+        return {
+            "device_id": acc_device_id,
+            "updated_at": updated_at,
+            "evidence_count": ev_count,
+            "competition_count": comp_count
+        }
+
+    return {
+        "current_account": get_stats(device_id) if current_acc else None,
+        "linked_account": get_stats(linked_acc["device_id"]) if linked_acc else None,
+        "email": email
+    }
+
+
+@app.post("/api/v1/account/link-execute")
+async def execute_email_link(
+    body: LinkExecuteRequest,
+    device_id: str = Depends(get_device_id),
+    email: str = Depends(get_supabase_user_email)
+):
+    sb = get_supabase()
+    keep_device_id = body.keep_device_id
     
-    return {"message": "アカウントの引き継ぎが完了しました"}
+    if keep_device_id == device_id:
+        # User chose to keep current device data.
+        # First, detach email from old linked account if it exists.
+        linked_acc = fetch_single(sb.table("accounts").select("device_id").eq("email", email).maybe_single()).data
+        if linked_acc and linked_acc["device_id"] != device_id:
+            sb.table("accounts").update({"email": None}).eq("device_id", linked_acc["device_id"]).execute()
+            
+        # Attach email to current device account
+        try:
+            sb.table("accounts").update({"email": email}).eq("device_id", device_id).execute()
+        except Exception as e:
+            if "unique" in str(e).lower() or "duplicate" in str(e).lower():
+                raise HTTPException(status_code=409, detail="このメールアドレスは既に別のアカウントと連携されています")
+            raise e
+            
+    else:
+        # User chose to keep linked account data.
+        # The frontend will just overwrite its local device_id. No backend action required for linkage.
+        pass
+
+    return {"message": "アカウントの連携・引き継ぎが完了しました"}
 
 
 # ============================================

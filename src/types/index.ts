@@ -119,3 +119,16 @@ export interface PendingRepRequest {
   status: RepresentativeStatus;
   created_at: string;
 }
+
+export interface AccountStats {
+  device_id: string;
+  updated_at: string | null;
+  evidence_count: number;
+  competition_count: number;
+}
+
+export interface LinkCheckResponse {
+  current_account: AccountStats | null;
+  linked_account: AccountStats | null;
+  email: string;
+}

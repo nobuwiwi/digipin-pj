@@ -13,6 +13,7 @@ import type {
   FriendWithAccount,
   RepresentativeStatus,
   PendingRepRequest,
+  LinkCheckResponse,
 } from "@/types";
 
 let API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || (window as any).__APP_CONFIG__?.API_BASE_URL || "").replace(/\/$/, "");
@@ -405,30 +406,31 @@ export async function getQRCodeData(
 // Device Transfer APIs
 // ============================================
 
-export async function linkEmail(
+export async function checkEmailLink(
   deviceId: string,
   jwtToken: string,
-): Promise<{ message: string; email: string }> {
-  const res = await safeFetch(`${API_BASE_URL}/api/v1/account/link-email`, {
-    method: "POST",
+): Promise<LinkCheckResponse> {
+  const res = await safeFetch(`${API_BASE_URL}/api/v1/account/link-check`, {
+    method: "GET",
     headers: buildHeaders(deviceId, {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${jwtToken}`,
     }),
   });
-  return handleResponse(res);
+  return handleResponse<LinkCheckResponse>(res);
 }
 
-export async function executeEmailTransfer(
+export async function executeEmailLink(
   deviceId: string,
   jwtToken: string,
+  keepDeviceId: string,
 ): Promise<{ message: string }> {
-  const res = await safeFetch(`${API_BASE_URL}/api/v1/device-transfer/email-execute`, {
+  const res = await safeFetch(`${API_BASE_URL}/api/v1/account/link-execute`, {
     method: "POST",
     headers: buildHeaders(deviceId, {
       "Content-Type": "application/json",
       Authorization: `Bearer ${jwtToken}`,
     }),
+    body: JSON.stringify({ keep_device_id: keepDeviceId }),
   });
   return handleResponse<{ message: string }>(res);
 }

@@ -46,9 +46,8 @@ class ExecuteTransferRequest(BaseModel):
     code: str
 
 
-class LinkEmailRequest(BaseModel):
+class LinkCheckRequest(BaseModel):
     pass  # JWT token contains the email
 
-
-class ExecuteEmailTransferRequest(BaseModel):
-    pass  # JWT token contains the email
+class LinkExecuteRequest(BaseModel):
+    keep_device_id: str

@@ -9,9 +9,9 @@ import {
   Edit3,
   Save,
 } from "lucide-react";
-import { getAccount, updateAccount, checkAccountName, linkEmail, executeEmailTransfer, ApiError } from "@/lib/api";
+import { getAccount, updateAccount, checkAccountName, checkEmailLink, executeEmailLink, ApiError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
-import type { Account } from "@/types";
+import type { Account, LinkCheckResponse } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -39,7 +39,9 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
   const [transferSuccess, setTransferSuccess] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [otpInput, setOtpInput] = useState("");
-  const [otpSentFor, setOtpSentFor] = useState<"link" | "transfer" | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [jwtToken, setJwtToken] = useState("");
+  const [linkCheckResult, setLinkCheckResult] = useState<LinkCheckResponse | null>(null);
 
   const fetchAccount = useCallback(async () => {
     setLoading(true);
@@ -352,29 +354,6 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
 
               <div className="flex gap-2">
                 <Button
-                  variant="outline"
-                  onClick={async () => {
-                    if (!emailInput) return setTransferError("メールアドレスを入力してください");
-                    setTransferLoading(true);
-                    setTransferError("");
-                    try {
-                      const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
-                      if (error) throw error;
-                      setOtpSentFor("link");
-                      setTransferSuccess("認証コードを送信しました。メールをご確認ください。");
-                    } catch (err: any) {
-                      setTransferError(err.message || "メールの送信に失敗しました");
-                    } finally {
-                      setTransferLoading(false);
-                    }
-                  }}
-                  loading={transferLoading && !otpSentFor}
-                  disabled={transferLoading || !emailInput}
-                  className="flex-1"
-                >
-                  連携する (旧端末)
-                </Button>
-                <Button
                   variant="primary"
                   onClick={async () => {
                     if (!emailInput) return setTransferError("メールアドレスを入力してください");
@@ -383,7 +362,7 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                     try {
                       const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
                       if (error) throw error;
-                      setOtpSentFor("transfer");
+                      setOtpSent(true);
                       setTransferSuccess("認証コードを送信しました。メールをご確認ください。");
                     } catch (err: any) {
                       setTransferError(err.message || "メールの送信に失敗しました");
@@ -391,15 +370,15 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                       setTransferLoading(false);
                     }
                   }}
-                  loading={transferLoading && !otpSentFor}
+                  loading={transferLoading && !otpSent}
                   disabled={transferLoading || !emailInput}
                   className="flex-1"
                 >
-                  引き継ぐ (新端末)
+                  メールアドレスで連携 / 引き継ぎ
                 </Button>
               </div>
             </div>
-          ) : (
+          ) : !linkCheckResult ? (
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-xs text-forest-700 font-bold">認証コード (6桁)</label>
@@ -420,7 +399,7 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setOtpSentFor(null);
+                    setOtpSent(false);
                     setOtpInput("");
                     setTransferSuccess("");
                     setTransferError("");
@@ -447,15 +426,19 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                       if (!data.session) throw new Error("セッションの取得に失敗しました");
 
                       const token = data.session.access_token;
-                      if (otpSentFor === "link") {
-                        await linkEmail(deviceId, token);
-                        setTransferSuccess("メールアドレスの連携が完了しました。");
-                        setOtpSentFor(null);
-                        setOtpInput("");
+                      setJwtToken(token);
+                      
+                      const checkRes = await checkEmailLink(deviceId, token);
+                      
+                      // 競合があるか確認 (current と linked が別々に存在する場合)
+                      if (checkRes.current_account && checkRes.linked_account && checkRes.current_account.device_id !== checkRes.linked_account.device_id) {
+                        setLinkCheckResult(checkRes);
                       } else {
-                        await executeEmailTransfer(deviceId, token);
-                        setTransferSuccess("引き継ぎが完了しました。再読み込みします...");
-                        setTimeout(() => window.location.reload(), 2000);
+                        // 競合がなければそのまま現在端末のIDで連携実行
+                        await executeEmailLink(deviceId, token, deviceId);
+                        setTransferSuccess("メールアドレスの連携が完了しました。");
+                        setOtpSent(false);
+                        setOtpInput("");
                       }
                     } catch (err: any) {
                       setTransferError(err.message || "認証または処理に失敗しました");
@@ -466,9 +449,74 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                   loading={transferLoading}
                   disabled={transferLoading || otpInput.length !== 6}
                 >
-                  {otpSentFor === "link" ? "連携を完了する" : "引き継ぎを実行する"}
+                  認証する
                 </Button>
               </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-3 bg-yellow-50 rounded-xl border border-yellow-200">
+                <p className="text-sm text-yellow-800 font-bold mb-1">データが競合しています</p>
+                <p className="text-xs text-yellow-700">このメールアドレスは既に別のアカウントと連携されています。どちらのデータを利用しますか？<br/>※選択されなかったデータは利用できなくなります。</p>
+              </div>
+              
+              <div className="grid gap-3">
+                <button 
+                  className="text-left p-4 rounded-xl border-2 border-forest-200 hover:border-forest-500 hover:bg-forest-50 transition-colors"
+                  onClick={async () => {
+                    setTransferLoading(true);
+                    try {
+                      await executeEmailLink(deviceId, jwtToken, linkCheckResult.current_account!.device_id);
+                      setTransferSuccess("現在端末のデータで連携を上書きしました。");
+                      setTimeout(() => window.location.reload(), 1500);
+                    } catch(err: any) {
+                      setTransferError(err.message);
+                      setTransferLoading(false);
+                    }
+                  }}
+                  disabled={transferLoading}
+                >
+                  <div className="font-bold text-forest-800 mb-2">現在端末のデータを残す</div>
+                  <div className="text-xs text-forest-600 space-y-1">
+                    <div>最終更新: {linkCheckResult.current_account!.updated_at ? new Date(linkCheckResult.current_account!.updated_at).toLocaleString() : "-"}</div>
+                    <div>証拠写真数: {linkCheckResult.current_account!.evidence_count}</div>
+                    <div>コンペ数: {linkCheckResult.current_account!.competition_count}</div>
+                  </div>
+                </button>
+                
+                <button 
+                  className="text-left p-4 rounded-xl border-2 border-forest-200 hover:border-forest-500 hover:bg-forest-50 transition-colors"
+                  onClick={async () => {
+                    setTransferLoading(true);
+                    try {
+                      await executeEmailLink(deviceId, jwtToken, linkCheckResult.linked_account!.device_id);
+                      localStorage.setItem("golf_evidence_device_id", linkCheckResult.linked_account!.device_id);
+                      setTransferSuccess("連携済みデータを引き継ぎました。再読み込みします...");
+                      setTimeout(() => window.location.reload(), 1500);
+                    } catch(err: any) {
+                      setTransferError(err.message);
+                      setTransferLoading(false);
+                    }
+                  }}
+                  disabled={transferLoading}
+                >
+                  <div className="font-bold text-forest-800 mb-2">連携済みデータを引き継ぐ</div>
+                  <div className="text-xs text-forest-600 space-y-1">
+                    <div>最終更新: {linkCheckResult.linked_account!.updated_at ? new Date(linkCheckResult.linked_account!.updated_at).toLocaleString() : "-"}</div>
+                    <div>証拠写真数: {linkCheckResult.linked_account!.evidence_count}</div>
+                    <div>コンペ数: {linkCheckResult.linked_account!.competition_count}</div>
+                  </div>
+                </button>
+              </div>
+              
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setLinkCheckResult(null)}
+                disabled={transferLoading}
+              >
+                キャンセル
+              </Button>
             </div>
           )}
 
