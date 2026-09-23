@@ -334,7 +334,7 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
         </div>
         <div className="p-5 space-y-4">
           <p className="text-sm text-gray-600 leading-relaxed">
-            メールアドレスを連携すると、別の端末へアカウントを引き継ぐことができます。
+            メールアドレスを連携すると、PCやスマホなど複数の端末で同じデータを同期して利用したり、新しい端末へアカウントを引き継いだりすることができます。
           </p>
 
           {!otpSent ? (
