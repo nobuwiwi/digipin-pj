@@ -46,6 +46,7 @@
     },
     "extra": {
       "apiBaseUrl": "https://digipin-pj-production.up.railway.app",
+      "webBaseUrl": "https://frontend-production-0a2c7.up.railway.app",
       "eas": {
         "projectId": "cf253ea1-5fba-4006-ad97-30e80b857d1c"
       }

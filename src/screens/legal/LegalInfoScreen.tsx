@@ -53,7 +53,7 @@ const LegalInfoScreen: React.FC = () => {
                     運営責任者
                   </th>
                   <td className="py-4 text-gray-700">
-                    小牧 信之
+                    
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
@@ -79,7 +79,7 @@ const LegalInfoScreen: React.FC = () => {
                     メールアドレス
                   </th>
                   <td className="py-4 text-gray-700 font-mono">
-                    support@digipin-app.jp
+                    info@dantaisen.com
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">

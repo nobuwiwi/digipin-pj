@@ -46,10 +46,10 @@ const ContactScreen: React.FC = () => {
                 サポート専用メールアドレス
               </p>
               <a
-                href="mailto:support@digipin-app.jp"
+                href="mailto:info@dantaisen.com"
                 className="text-base sm:text-lg font-bold text-forest-900 hover:text-forest-700 hover:underline block font-mono"
               >
-                support@digipin-app.jp
+                info@dantaisen.com
               </a>
               <p className="text-xs text-gray-500">
                 受付時間: 24時間受付（原則3営業日以内に返信いたします）

@@ -8,7 +8,7 @@ export function getApiBaseUrl(): string {
 }
 
 export function getWebBaseUrl(): string {
-  return Constants.expoConfig?.extra?.webBaseUrl ?? 'https://golf-web-production.up.railway.app';
+  return Constants.expoConfig?.extra?.webBaseUrl ?? 'https://frontend-production-0a2c7.up.railway.app';
 }
 
 export async function getDeviceId(): Promise<string> {
