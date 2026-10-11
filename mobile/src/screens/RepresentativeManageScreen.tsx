@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, FlatList } from 'react-native';
-import { ArrowLeft, Search, UserCheck, UserPlus, Clock, Check, X, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, Search, UserCheck, UserPlus, Clock, RefreshCw } from 'lucide-react-native';
 import {
   getRepresentatives,
   getFriends,
   searchAccounts,
   requestRepresentative,
-  updateRepresentativeStatus,
   ApiError,
 } from '@/lib/api';
-import type { RepresentativeWithAccount, FriendWithAccount, RepresentativeStatus } from '@/types';
+import type { RepresentativeWithAccount, FriendWithAccount } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { colors, spacing, radius, typography } from '@/theme';
@@ -81,19 +80,6 @@ export function RepresentativeManageScreen({ deviceId, competitionId, onBack }: 
       await fetchData();
       setSearchQuery('');
       setSearchResults([]);
-    } catch (err) {
-      const apiErr = err as ApiError;
-      setError(apiErr.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleUpdateStatus = async (repId: string, status: RepresentativeStatus) => {
-    setActionLoading(repId);
-    try {
-      await updateRepresentativeStatus(deviceId, repId, status);
-      await fetchData();
     } catch (err) {
       const apiErr = err as ApiError;
       setError(apiErr.message);
@@ -225,21 +211,8 @@ export function RepresentativeManageScreen({ deviceId, competitionId, onBack }: 
               {pendingReps.map((rep) => (
                 <View key={rep.id} style={styles.pendingItem}>
                   <Text style={styles.repName}>{rep.accounts?.account_name ?? '不明'}</Text>
-                  <View style={styles.pendingActions}>
-                    <TouchableOpacity
-                      onPress={() => handleUpdateStatus(rep.id, 'approved')}
-                      disabled={actionLoading === rep.id}
-                      style={styles.approveButton}
-                    >
-                      <Check size={16} color={colors.white} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleUpdateStatus(rep.id, 'rejected')}
-                      disabled={actionLoading === rep.id}
-                      style={styles.rejectButton}
-                    >
-                      <X size={16} color={colors.white} />
-                    </TouchableOpacity>
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeText}>承認待ち</Text>
                   </View>
                 </View>
               ))}
@@ -425,19 +398,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amber[50],
     borderRadius: radius.md,
   },
-  pendingActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+  pendingBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    backgroundColor: colors.amber[100],
+    borderRadius: radius.full,
   },
-  approveButton: {
-    padding: spacing.sm,
-    backgroundColor: colors.forest[700],
-    borderRadius: radius.sm,
-  },
-  rejectButton: {
-    padding: spacing.sm,
-    backgroundColor: colors.red[500],
-    borderRadius: radius.sm,
+  pendingBadgeText: {
+    fontSize: typography.xs,
+    color: colors.amber[700],
+    fontWeight: '500',
   },
   rejectedItem: {
     flexDirection: 'row',

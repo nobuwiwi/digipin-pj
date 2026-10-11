@@ -1,14 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, Search, UserCheck, UserPlus, Clock, Check, X, RefreshCw } from "lucide-react";
+import { ArrowLeft, Search, UserCheck, UserPlus, Clock, RefreshCw } from "lucide-react";
 import {
   getRepresentatives,
   getFriends,
   searchAccounts,
   requestRepresentative,
-  updateRepresentativeStatus,
   ApiError,
 } from "@/lib/api";
-import type { RepresentativeWithAccount, FriendWithAccount, RepresentativeStatus } from "@/types";
+import type { RepresentativeWithAccount, FriendWithAccount } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -83,19 +82,6 @@ export function RepresentativeManageScreen({
       await fetchData();
       setSearchQuery("");
       setSearchResults([]);
-    } catch (err) {
-      const apiErr = err as ApiError;
-      setError(apiErr.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleUpdateStatus = async (repId: string, status: RepresentativeStatus) => {
-    setActionLoading(repId);
-    try {
-      await updateRepresentativeStatus(deviceId, repId, status);
-      await fetchData();
     } catch (err) {
       const apiErr = err as ApiError;
       setError(apiErr.message);
@@ -256,22 +242,9 @@ export function RepresentativeManageScreen({
                   <span className="text-sm font-medium text-forest-800">
                     {rep.accounts?.account_name ?? "不明"}
                   </span>
-                  <div className="flex gap-2">
-                    <button type="button"
-                      onClick={() => handleUpdateStatus(rep.id, "approved")}
-                      disabled={actionLoading === rep.id}
-                      className="p-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors disabled:opacity-50"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                    <button type="button"
-                      onClick={() => handleUpdateStatus(rep.id, "rejected")}
-                      disabled={actionLoading === rep.id}
-                      className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <span className="text-xs text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full font-medium">
+                    承認待ち
+                  </span>
                 </div>
               ))}
             </div>
