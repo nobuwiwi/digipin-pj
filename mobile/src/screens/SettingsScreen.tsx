@@ -12,19 +12,20 @@ import {
   ChevronRight,
   HelpCircle,
 } from 'lucide-react-native';
-import { getAccount, updateAccount, checkAccountName, linkEmail, executeEmailTransfer, ApiError } from '@/lib/api';
+import { getAccount, updateAccount, checkAccountName, checkEmailLink, executeEmailLink, ApiError } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
-import { getWebBaseUrl } from '@/lib/deviceId';
-import type { Account } from '@/types';
+import { getWebBaseUrl, setStoredDeviceId } from '@/lib/deviceId';
+import type { Account, LinkCheckResponse } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { colors, spacing, radius, typography } from '@/theme';
 
 interface SettingsScreenProps {
   deviceId: string;
+  onDeviceIdChange?: (newDeviceId: string) => void;
 }
 
-export function SettingsScreen({ deviceId }: SettingsScreenProps) {
+export function SettingsScreen({ deviceId, onDeviceIdChange }: SettingsScreenProps) {
   const [account, setAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -40,7 +41,9 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
   const [transferSuccess, setTransferSuccess] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [otpInput, setOtpInput] = useState('');
-  const [otpSentFor, setOtpSentFor] = useState<'link' | 'transfer' | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [jwtToken, setJwtToken] = useState('');
+  const [linkCheckResult, setLinkCheckResult] = useState<LinkCheckResponse | null>(null);
 
   const fetchAccount = useCallback(async () => {
     setLoading(true);
@@ -332,10 +335,10 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
         </View>
         <View style={styles.cardBody}>
           <Text style={styles.transferDescription}>
-            メールアドレスを連携すると、別の端末へアカウントを引き継ぐことができます。
+            メールアドレスを連携すると、PCやスマホなど複数の端末で同じデータを同期して利用したり、新しい端末へアカウントを引き継いだりすることができます。
           </Text>
 
-          {!otpSentFor ? (
+          {!otpSent ? (
             <View style={{ gap: spacing.md }}>
               <View style={{ gap: spacing.xs }}>
                 <Text style={styles.label}>メールアドレス</Text>
@@ -351,62 +354,34 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                 />
               </View>
 
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <Button
-                  variant="outline"
-                  style={styles.flex1}
-                  onPress={async () => {
-                    if (!emailInput) {
-                      setTransferError('メールアドレスを入力してください');
-                      return;
-                    }
-                    setTransferLoading(true);
-                    setTransferError('');
-                    try {
-                      const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
-                      if (error) throw error;
-                      setOtpSentFor('link');
-                      setTransferSuccess('認証コードを送信しました。メールをご確認ください。');
-                    } catch (err: any) {
-                      setTransferError(err.message || 'メールの送信に失敗しました');
-                    } finally {
-                      setTransferLoading(false);
-                    }
-                  }}
-                  loading={transferLoading && !otpSentFor}
-                  disabled={transferLoading || !emailInput}
-                >
-                  連携する (旧端末)
-                </Button>
-                <Button
-                  variant="primary"
-                  style={styles.flex1}
-                  onPress={async () => {
-                    if (!emailInput) {
-                      setTransferError('メールアドレスを入力してください');
-                      return;
-                    }
-                    setTransferLoading(true);
-                    setTransferError('');
-                    try {
-                      const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
-                      if (error) throw error;
-                      setOtpSentFor('transfer');
-                      setTransferSuccess('認証コードを送信しました。メールをご確認ください。');
-                    } catch (err: any) {
-                      setTransferError(err.message || 'メールの送信に失敗しました');
-                    } finally {
-                      setTransferLoading(false);
-                    }
-                  }}
-                  loading={transferLoading && !otpSentFor}
-                  disabled={transferLoading || !emailInput}
-                >
-                  引き継ぐ (新端末)
-                </Button>
-              </View>
+              <Button
+                variant="primary"
+                onPress={async () => {
+                  if (!emailInput.trim()) {
+                    setTransferError('メールアドレスを入力してください');
+                    return;
+                  }
+                  setTransferLoading(true);
+                  setTransferError('');
+                  setTransferSuccess('');
+                  try {
+                    const { error } = await supabase.auth.signInWithOtp({ email: emailInput.trim() });
+                    if (error) throw error;
+                    setOtpSent(true);
+                    setTransferSuccess('認証コードを送信しました。メールをご確認ください。');
+                  } catch (err: any) {
+                    setTransferError(err.message || 'メールの送信に失敗しました');
+                  } finally {
+                    setTransferLoading(false);
+                  }
+                }}
+                loading={transferLoading && !otpSent}
+                disabled={transferLoading || !emailInput.trim()}
+              >
+                メールアドレスで連携 / 引き継ぎ
+              </Button>
             </View>
-          ) : (
+          ) : !linkCheckResult ? (
             <View style={{ gap: spacing.md }}>
               <View style={{ gap: spacing.xs }}>
                 <Text style={styles.label}>認証コード (6桁)</Text>
@@ -427,7 +402,7 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                 <Button
                   variant="outline"
                   onPress={() => {
-                    setOtpSentFor(null);
+                    setOtpSent(false);
                     setOtpInput('');
                     setTransferSuccess('');
                     setTransferError('');
@@ -440,7 +415,7 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                   variant="primary"
                   style={styles.flex1}
                   onPress={async () => {
-                    if (otpInput.length !== 6) {
+                    if (otpInput.trim().length !== 6) {
                       setTransferError('6桁のコードを入力してください');
                       return;
                     }
@@ -449,22 +424,45 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                     setTransferSuccess('');
                     try {
                       const { data, error } = await supabase.auth.verifyOtp({
-                        email: emailInput,
-                        token: otpInput,
+                        email: emailInput.trim(),
+                        token: otpInput.trim(),
                         type: 'email',
                       });
                       if (error) throw error;
                       if (!data.session) throw new Error('セッションの取得に失敗しました');
 
                       const token = data.session.access_token;
-                      if (otpSentFor === 'link') {
-                        await linkEmail(deviceId, token);
-                        setTransferSuccess('メールアドレスの連携が完了しました。');
-                        setOtpSentFor(null);
+                      setJwtToken(token);
+
+                      const checkRes = await checkEmailLink(deviceId, token);
+
+                      // 競合があるか確認 (current と linked が別々に存在する場合)
+                      if (
+                        checkRes.current_account &&
+                        checkRes.linked_account &&
+                        checkRes.current_account.device_id !== checkRes.linked_account.device_id
+                      ) {
+                        setLinkCheckResult(checkRes);
+                      } else if (!checkRes.current_account && checkRes.linked_account) {
+                        // 現在端末が未登録で、連携済みデータがある場合は連携データを引き継ぐ
+                        const targetDeviceId = checkRes.linked_account.device_id;
+                        await executeEmailLink(deviceId, token, targetDeviceId);
+                        await setStoredDeviceId(targetDeviceId);
+                        setTransferSuccess('連携済みデータを引き継ぎました。データを更新します...');
+                        setOtpSent(false);
                         setOtpInput('');
+                        if (onDeviceIdChange) {
+                          setTimeout(() => {
+                            onDeviceIdChange(targetDeviceId);
+                          }, 800);
+                        }
                       } else {
-                        await executeEmailTransfer(deviceId, token);
-                        setTransferSuccess('引き継ぎが完了しました。');
+                        // 競合がなければそのまま現在端末のIDで連携実行
+                        await executeEmailLink(deviceId, token, deviceId);
+                        setTransferSuccess('メールアドレスの連携が完了しました。');
+                        setOtpSent(false);
+                        setOtpInput('');
+                        fetchAccount();
                       }
                     } catch (err: any) {
                       setTransferError(err.message || '認証または処理に失敗しました');
@@ -473,11 +471,109 @@ export function SettingsScreen({ deviceId }: SettingsScreenProps) {
                     }
                   }}
                   loading={transferLoading}
-                  disabled={transferLoading || otpInput.length !== 6}
+                  disabled={transferLoading || otpInput.trim().length !== 6}
                 >
-                  {otpSentFor === 'link' ? '連携を完了する' : '引き継ぎを実行する'}
+                  認証する
                 </Button>
               </View>
+            </View>
+          ) : (
+            <View style={{ gap: spacing.md }}>
+              <View style={styles.conflictAlertBox}>
+                <Text style={styles.conflictAlertTitle}>データが競合しています</Text>
+                <Text style={styles.conflictAlertDescription}>
+                  このメールアドレスは既に別のアカウントと連携されています。どちらのデータを利用しますか？{'\n'}※選択されなかったデータは利用できなくなります。
+                </Text>
+              </View>
+
+              <View style={{ gap: spacing.sm }}>
+                {linkCheckResult.current_account && (
+                  <TouchableOpacity
+                    style={styles.conflictOptionCard}
+                    activeOpacity={0.7}
+                    disabled={transferLoading}
+                    onPress={async () => {
+                      setTransferLoading(true);
+                      setTransferError('');
+                      try {
+                        await executeEmailLink(deviceId, jwtToken, linkCheckResult.current_account!.device_id);
+                        setTransferSuccess('現在端末のデータで連携を上書きしました。');
+                        setLinkCheckResult(null);
+                        setOtpSent(false);
+                        setOtpInput('');
+                        fetchAccount();
+                      } catch (err: any) {
+                        setTransferError(err.message || '連携の更新に失敗しました');
+                      } finally {
+                        setTransferLoading(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.conflictOptionTitle}>現在端末のデータを残す</Text>
+                    <View style={styles.conflictStatsList}>
+                      <Text style={styles.conflictStatText}>
+                        最終更新: {linkCheckResult.current_account.updated_at ? new Date(linkCheckResult.current_account.updated_at).toLocaleString() : '-'}
+                      </Text>
+                      <Text style={styles.conflictStatText}>
+                        証拠写真数: {linkCheckResult.current_account.evidence_count}
+                      </Text>
+                      <Text style={styles.conflictStatText}>
+                        コンペ数: {linkCheckResult.current_account.competition_count}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                {linkCheckResult.linked_account && (
+                  <TouchableOpacity
+                    style={styles.conflictOptionCard}
+                    activeOpacity={0.7}
+                    disabled={transferLoading}
+                    onPress={async () => {
+                      setTransferLoading(true);
+                      setTransferError('');
+                      try {
+                        const targetDeviceId = linkCheckResult.linked_account!.device_id;
+                        await executeEmailLink(deviceId, jwtToken, targetDeviceId);
+                        await setStoredDeviceId(targetDeviceId);
+                        setTransferSuccess('連携済みデータを引き継ぎました。データを更新します...');
+                        setLinkCheckResult(null);
+                        setOtpSent(false);
+                        setOtpInput('');
+                        if (onDeviceIdChange) {
+                          setTimeout(() => {
+                            onDeviceIdChange(targetDeviceId);
+                          }, 800);
+                        }
+                      } catch (err: any) {
+                        setTransferError(err.message || '引き継ぎ処理に失敗しました');
+                        setTransferLoading(false);
+                      }
+                    }}
+                  >
+                    <Text style={styles.conflictOptionTitle}>連携済みデータを引き継ぐ</Text>
+                    <View style={styles.conflictStatsList}>
+                      <Text style={styles.conflictStatText}>
+                        最終更新: {linkCheckResult.linked_account.updated_at ? new Date(linkCheckResult.linked_account.updated_at).toLocaleString() : '-'}
+                      </Text>
+                      <Text style={styles.conflictStatText}>
+                        証拠写真数: {linkCheckResult.linked_account.evidence_count}
+                      </Text>
+                      <Text style={styles.conflictStatText}>
+                        コンペ数: {linkCheckResult.linked_account.competition_count}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Button
+                variant="outline"
+                onPress={() => setLinkCheckResult(null)}
+                disabled={transferLoading}
+              >
+                キャンセル
+              </Button>
             </View>
           )}
 
@@ -702,5 +798,44 @@ const styles = StyleSheet.create({
   },
   flex1: {
     flex: 1,
+  },
+  conflictAlertBox: {
+    backgroundColor: colors.amber[50],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.amber[200],
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  conflictAlertTitle: {
+    fontSize: typography.sm,
+    fontWeight: '700',
+    color: colors.amber[800],
+  },
+  conflictAlertDescription: {
+    fontSize: typography.xs,
+    color: colors.amber[700],
+    lineHeight: 18,
+  },
+  conflictOptionCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.forest[200],
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  conflictOptionTitle: {
+    fontSize: typography.base,
+    fontWeight: '700',
+    color: colors.forest[800],
+    marginBottom: spacing.xs,
+  },
+  conflictStatsList: {
+    gap: 2,
+  },
+  conflictStatText: {
+    fontSize: typography.xs,
+    color: colors.forest[600],
   },
 });

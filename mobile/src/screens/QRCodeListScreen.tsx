@@ -20,6 +20,7 @@ function buildDeepLink(competitionId: string, holeNumber: number, awardType: str
     competition_id: competitionId,
     hole_number: String(holeNumber),
     award_type: awardType,
+    openExternalBrowser: '1',
   });
   if (repNames.length > 0) {
     params.set('reps', repNames.join(','));

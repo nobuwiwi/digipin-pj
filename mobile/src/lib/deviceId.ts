@@ -20,6 +20,10 @@ export async function getDeviceId(): Promise<string> {
   return id;
 }
 
+export async function setStoredDeviceId(id: string): Promise<void> {
+  await AsyncStorage.setItem(DEVICE_ID_KEY, id);
+}
+
 export async function resetDeviceId(): Promise<string> {
   const id = generateUUID();
   await AsyncStorage.setItem(DEVICE_ID_KEY, id);

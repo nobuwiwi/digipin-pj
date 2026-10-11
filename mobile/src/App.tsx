@@ -291,7 +291,12 @@ function Main() {
           />
         )}
         {activeTab === 'settings' && (
-          <SettingsScreen deviceId={deviceId} />
+          <SettingsScreen
+            deviceId={deviceId}
+            onDeviceIdChange={(newId) => {
+              setDeviceId(newId);
+            }}
+          />
         )}
       </RNView>
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} dashboardBadge={pendingCount} />
