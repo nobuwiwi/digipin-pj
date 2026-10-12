@@ -37,7 +37,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a6b4c"
       },
-      "package": "com.golfevidence.app",
+      "package": "jp.dproject.digipin",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
