@@ -3,12 +3,35 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DEVICE_ID_KEY = 'golf_evidence_device_id';
 
+const DEFAULT_PRODUCTION_API_URL = 'https://digipin-pj-production.up.railway.app';
+const DEFAULT_PRODUCTION_WEB_URL = 'https://frontend-production-0a2c7.up.railway.app';
+
 export function getApiBaseUrl(): string {
-  return Constants.expoConfig?.extra?.apiBaseUrl ?? 'http://localhost:8000';
+  const manifest =
+    Constants.expoConfig ??
+    (Constants as any).manifest ??
+    (Constants as any).manifest2?.extra?.expoClient;
+  const url = manifest?.extra?.apiBaseUrl;
+
+  if (!__DEV__ && (!url || url.includes('localhost') || url.includes('127.0.0.1'))) {
+    return DEFAULT_PRODUCTION_API_URL;
+  }
+
+  return url ?? DEFAULT_PRODUCTION_API_URL;
 }
 
 export function getWebBaseUrl(): string {
-  return Constants.expoConfig?.extra?.webBaseUrl ?? 'https://frontend-production-0a2c7.up.railway.app';
+  const manifest =
+    Constants.expoConfig ??
+    (Constants as any).manifest ??
+    (Constants as any).manifest2?.extra?.expoClient;
+  const url = manifest?.extra?.webBaseUrl;
+
+  if (!__DEV__ && (!url || url.includes('localhost') || url.includes('127.0.0.1'))) {
+    return DEFAULT_PRODUCTION_WEB_URL;
+  }
+
+  return url ?? DEFAULT_PRODUCTION_WEB_URL;
 }
 
 export async function getDeviceId(): Promise<string> {

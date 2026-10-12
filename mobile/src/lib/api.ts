@@ -18,7 +18,9 @@ import type {
   LinkCheckResponse,
 } from '@/types';
 
-const BASE_URL = getApiBaseUrl();
+function getBaseUrl(): string {
+  return getApiBaseUrl();
+}
 
 export class ApiError extends Error {
   status: number;
@@ -67,14 +69,14 @@ async function safeFetch(url: string, options?: RequestInit): Promise<Response> 
 // Account APIs
 
 export async function checkAccount(deviceId: string): Promise<AccountCheckResponse> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/account/check`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/account/check`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse<AccountCheckResponse>(res);
 }
 
 export async function checkAccountName(deviceId: string, accountName: string): Promise<CheckNameResponse> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/account/check-name`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/account/check-name`, {
     method: 'POST',
     headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ account_name: accountName }),
@@ -83,7 +85,7 @@ export async function checkAccountName(deviceId: string, accountName: string): P
 }
 
 export async function registerAccount(deviceId: string, accountName: string): Promise<{ message: string; account: Account }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/account/register`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/account/register`, {
     method: 'POST',
     headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ account_name: accountName }),
@@ -92,14 +94,14 @@ export async function registerAccount(deviceId: string, accountName: string): Pr
 }
 
 export async function getAccount(deviceId: string): Promise<{ account: Account }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/account`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/account`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
 }
 
 export async function updateAccount(deviceId: string, accountName: string): Promise<{ message: string; account: Account }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/account`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/account`, {
     method: 'PUT',
     headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ account_name: accountName }),
@@ -110,7 +112,7 @@ export async function updateAccount(deviceId: string, accountName: string): Prom
 // Dashboard API
 
 export async function getDashboard(deviceId: string): Promise<DashboardData> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/dashboard`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/dashboard`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse<DashboardData>(res);
@@ -122,7 +124,7 @@ export async function getCompetitions(
   deviceId: string,
   status?: string,
 ): Promise<{ competitions: CompetitionWithCount[]; represented: CompetitionWithCount[] }> {
-  const url = new URL(`${BASE_URL}/api/v1/competitions`);
+  const url = new URL(`${getBaseUrl()}/api/v1/competitions`);
   if (status) url.searchParams.set('status', status);
   const res = await safeFetch(url.toString(), {
     headers: buildHeaders(deviceId),
@@ -134,7 +136,7 @@ export async function getCompetitionDetail(
   deviceId: string,
   id: string,
 ): Promise<{ competition: Competition; evidenceImages: EvidenceImageWithRelations[] }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${id}`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${id}`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
@@ -144,7 +146,7 @@ export async function getCompetitionFull(
   deviceId: string,
   id: string,
 ): Promise<{ competition: Competition; holes: CompetitionHole[] }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${id}/full`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${id}/full`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
@@ -154,7 +156,7 @@ export async function createCompetition(
   deviceId: string,
   data: { name: string; date: string; course_name?: string; holes?: { hole_number: number; award_type: string }[] },
 ): Promise<{ message: string; competition: Competition }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions`, {
     method: 'POST',
     headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify(data),
@@ -167,7 +169,7 @@ export async function updateCompetition(
   id: string,
   data: { name?: string; date?: string; course_name?: string; status?: string; holes?: { hole_number: number; award_type: string }[] },
 ): Promise<{ message: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${id}`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${id}`, {
     method: 'PUT',
     headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify(data),
@@ -176,7 +178,7 @@ export async function updateCompetition(
 }
 
 export async function deleteCompetition(deviceId: string, id: string): Promise<{ message: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${id}`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${id}`, {
     method: 'DELETE',
     headers: buildHeaders(deviceId),
   });
@@ -189,7 +191,7 @@ export async function getRepresentatives(
   deviceId: string,
   competitionId: string,
 ): Promise<{ representatives: RepresentativeWithAccount[] }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${competitionId}/representatives`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${competitionId}/representatives`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
@@ -200,7 +202,7 @@ export async function requestRepresentative(
   competitionId: string,
   targetDeviceId: string,
 ): Promise<{ message: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${competitionId}/representatives/request`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${competitionId}/representatives/request`, {
     method: 'POST',
     headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ target_device_id: targetDeviceId }),
@@ -213,7 +215,7 @@ export async function updateRepresentativeStatus(
   repId: string,
   status: RepresentativeStatus,
 ): Promise<{ message: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/representatives/${repId}`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/representatives/${repId}`, {
     method: 'PUT',
     headers: buildHeaders(deviceId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ status }),
@@ -222,7 +224,7 @@ export async function updateRepresentativeStatus(
 }
 
 export async function getPendingRequests(deviceId: string): Promise<{ requests: PendingRepRequest[] }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/representatives/pending`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/representatives/pending`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
@@ -231,7 +233,7 @@ export async function getPendingRequests(deviceId: string): Promise<{ requests: 
 // Friend APIs
 
 export async function getFriends(deviceId: string): Promise<{ friends: FriendWithAccount[] }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/friends`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/friends`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
@@ -241,7 +243,7 @@ export async function searchAccounts(
   deviceId: string,
   query: string,
 ): Promise<{ accounts: { device_id: string; account_name: string }[] }> {
-  const url = new URL(`${BASE_URL}/api/v1/accounts/search`);
+  const url = new URL(`${getBaseUrl()}/api/v1/accounts/search`);
   url.searchParams.set('q', query);
   const res = await safeFetch(url.toString(), {
     headers: buildHeaders(deviceId),
@@ -255,7 +257,7 @@ export async function getEvidenceImages(
   deviceId: string,
   filters?: { competition_id?: string; award_type?: string },
 ): Promise<{ evidenceImages: EvidenceImageWithRelations[] }> {
-  const url = new URL(`${BASE_URL}/api/v1/evidence`);
+  const url = new URL(`${getBaseUrl()}/api/v1/evidence`);
   if (filters?.competition_id) url.searchParams.set('competition_id', filters.competition_id);
   if (filters?.award_type) url.searchParams.set('award_type', filters.award_type);
   const res = await safeFetch(url.toString(), {
@@ -268,7 +270,7 @@ export async function getEvidenceDetail(
   deviceId: string,
   id: string,
 ): Promise<{ evidenceImage: EvidenceImageWithRelations }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/evidence/${id}`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/evidence/${id}`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
@@ -306,7 +308,7 @@ export async function createEvidence(
 
   formData.append('image', blob, fileName);
 
-  const res = await safeFetch(`${BASE_URL}/api/v1/evidence`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/evidence`, {
     method: 'POST',
     headers: buildHeaders(deviceId),
     body: formData,
@@ -315,7 +317,7 @@ export async function createEvidence(
 }
 
 export async function deleteEvidence(deviceId: string, id: string): Promise<{ message: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/evidence/${id}`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/evidence/${id}`, {
     method: 'DELETE',
     headers: buildHeaders(deviceId),
   });
@@ -325,7 +327,7 @@ export async function deleteEvidence(deviceId: string, id: string): Promise<{ me
 // QR Code Data API
 
 export async function getQRCodeData(deviceId: string, competitionId: string): Promise<QRCodeData> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${competitionId}/qr-data`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${competitionId}/qr-data`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse<QRCodeData>(res);
@@ -337,7 +339,7 @@ export async function checkEmailLink(
   deviceId: string,
   jwtToken: string,
 ): Promise<LinkCheckResponse> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/account/link-check`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/account/link-check`, {
     method: 'GET',
     headers: buildHeaders(deviceId, {
       Authorization: `Bearer ${jwtToken}`,
@@ -351,7 +353,7 @@ export async function executeEmailLink(
   jwtToken: string,
   keepDeviceId: string,
 ): Promise<{ message: string }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/account/link-execute`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/account/link-execute`, {
     method: 'POST',
     headers: buildHeaders(deviceId, {
       'Content-Type': 'application/json',
@@ -368,7 +370,7 @@ export async function getEvidenceByCompetition(
   deviceId: string,
   competitionId: string,
 ): Promise<{ evidenceImages: EvidenceImageWithRelations[] }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${competitionId}/evidence`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${competitionId}/evidence`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
@@ -380,7 +382,7 @@ export async function checkRepresentative(
   deviceId: string,
   competitionId: string,
 ): Promise<{ isRepresentative: boolean; isOwner: boolean }> {
-  const res = await safeFetch(`${BASE_URL}/api/v1/competitions/${competitionId}/rep-check`, {
+  const res = await safeFetch(`${getBaseUrl()}/api/v1/competitions/${competitionId}/rep-check`, {
     headers: buildHeaders(deviceId),
   });
   return handleResponse(res);
