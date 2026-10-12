@@ -307,10 +307,20 @@ function Main() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <Main />
+      <ErrorBoundary
+        fallback={() => (
+          <RNView style={[styles.screen, styles.center]}>
+            <Text style={styles.errorTitle}>エラーが発生しました</Text>
+            <Text style={styles.errorMessage}>アプリの読み込み中にエラーが発生しました。</Text>
+          </RNView>
+        )}
+      >
+        <Main />
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
+
 
 const styles = StyleSheet.create({
   screen: {
