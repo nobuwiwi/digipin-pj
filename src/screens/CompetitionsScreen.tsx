@@ -76,63 +76,83 @@ export function CompetitionsScreen({
     isOwned: boolean;
   }) => {
     const imgCount = comp.evidence_images?.[0]?.count ?? 0;
+    const handleOpen = () => {
+      if (isOwned) {
+        onOpenManage(comp.id);
+      } else {
+        onOpenDetail(comp.id);
+      }
+    };
+
     return (
-      <div
-        className="bg-white rounded-2xl p-4 shadow-sm border border-forest-50 hover:shadow-md transition-shadow cursor-pointer"
-        onClick={() => isOwned ? onOpenManage(comp.id) : onOpenDetail(comp.id)}
-      >
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-bold text-forest-800">{comp.name}</h3>
-              <span
-                className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                  isOwned
-                    ? "bg-forest-100 text-forest-700"
-                    : "bg-sand-100 text-sand-700"
-                }`}
-              >
-                {isOwned ? "主催" : "代表"}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                {formatDate(comp.date)}
-              </span>
-              {comp.course_name && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {comp.course_name}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-forest-50 hover:shadow-md transition-shadow">
+        <div
+          onClick={handleOpen}
+          className="cursor-pointer"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-forest-800">{comp.name}</h3>
+                <span
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                    isOwned
+                      ? "bg-forest-100 text-forest-700"
+                      : "bg-sand-100 text-sand-700"
+                  }`}
+                >
+                  {isOwned ? "主催" : "代表"}
                 </span>
-              )}
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {formatDate(comp.date)}
+                </span>
+                {comp.course_name && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {comp.course_name}
+                  </span>
+                )}
+              </div>
             </div>
+            <span
+              className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                comp.status === "active"
+                  ? "bg-forest-50 text-forest-600"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {comp.status === "active" ? "開催中" : "終了"}
+            </span>
           </div>
-          <span
-            className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-              comp.status === "active"
-                ? "bg-forest-50 text-forest-600"
-                : "bg-gray-100 text-gray-500"
-            }`}
-          >
-            {comp.status === "active" ? "開催中" : "終了"}
-          </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400">{imgCount}枚の証拠画像</span>
+        <div className="flex items-center justify-between pt-1">
+          <div
+            onClick={handleOpen}
+            className="text-xs text-gray-400 cursor-pointer flex-1"
+          >
+            {imgCount}枚の証拠画像
+          </div>
           <div className="flex items-center gap-1">
             {isOwned && (
-              <button type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeleteTarget(comp);
-                }}
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(comp)}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                title="コンペを削除"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
-            <ChevronRight className="w-5 h-5 text-gray-300" />
+            <button
+              type="button"
+              onClick={handleOpen}
+              className="p-1 text-gray-300 hover:text-gray-500 transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
